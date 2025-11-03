@@ -38,51 +38,33 @@ jobs:
         $version = "${{ github.ref_name }}" -replace 'v', ''
         echo "version=$version" >> $env:GITHUB_OUTPUT
 
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
+    - name: Create Release with Assets
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref_name }}
-        release_name: Baseball Binder ${{ github.ref_name }}
-        body: |
-          ## Baseball Binder ${{ github.ref_name }}
+      run: |
+        gh release create ${{ github.ref_name }} `
+          ./dist/BaseballBinder-Windows.zip `
+          ./dist/BaseballBinder/BaseballBinder.exe `
+          --title "Baseball Binder ${{ github.ref_name }}" `
+          --notes "## Baseball Binder ${{ github.ref_name }}
 
-          ### Download
-          Download the Windows executable below and extract it to run Baseball Binder.
+        ### Download
+        Download the Windows executable below to run Baseball Binder.
 
-          ### Installation
-          1. Download `BaseballBinder-Windows.zip`
-          2. Extract the ZIP file to a folder of your choice
-          3. Run `BaseballBinder.exe`
-          4. The application will open in your default browser
+        ### Installation
+        1. Download \`BaseballBinder.exe\` or \`BaseballBinder-Windows.zip\`
+        2. Run \`BaseballBinder.exe\`
+        3. The application will open in your default browser
 
-          ### First Time Setup
-          If using eBay price checking features, you'll need to provide your eBay API credentials in the settings.
+        ### First Time Setup
+        If using eBay price checking features, you'll need to provide your eBay API credentials in the settings.
 
-          ### What's New
-          See the release notes for details on new features and bug fixes.
+        ### What's New
+        - eBay API Integration for price checking
+        - Auto-Update System with professional notifications
+        - Manual Set Entry for cards not in checklists
+        - Build system for Windows executable distribution
+        - Rate limiting and API management
+        - Improved dashboard and statistics
 
-        draft: false
-        prerelease: false
-
-    - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/BaseballBinder-Windows.zip
-        asset_name: BaseballBinder-Windows.zip
-        asset_content_type: application/zip
-
-    - name: Upload Executable
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/BaseballBinder/BaseballBinder.exe
-        asset_name: BaseballBinder.exe
-        asset_content_type: application/octet-stream
+        See the full commit message for detailed changelog."
