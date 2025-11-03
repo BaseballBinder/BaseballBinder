@@ -8,7 +8,15 @@
       "Bash(python -c:*)",
       "Bash(curl:*)",
       "Bash(python -m uvicorn:*)",
-      "Bash(copy index.html index.html.backup)"
+      "Bash(copy index.html index.html.backup)",
+      "Bash(timeout /t 3)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(git log:*)",
+      "Bash(if exist .gitignore type .gitignore)",
+      "Bash(if not exist .githubworkflows mkdir .githubworkflows)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

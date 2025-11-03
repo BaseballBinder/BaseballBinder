@@ -3,11 +3,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import func
+import logging
+import json
 
 from models import Card, get_db
 from checklist_api import router as checklist_router
+from ebay_api import eBayAPI, eBayAPIError
+from rate_limiter import rate_limiter
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Card Collection API")
 
@@ -175,11 +183,21 @@ def get_collection_stats(db: Session = Depends(get_db)):
     total_value = db.query(func.sum(Card.current_value)).scalar() or 0
     total_invested = db.query(func.sum(Card.price_paid)).scalar() or 0
 
+    # Count cards with eBay pricing data (has ebay_avg_price)
+    cards_with_ebay_pricing = db.query(Card).filter(Card.ebay_avg_price.isnot(None)).count()
+
+    # Only calculate profit/loss if we have eBay pricing data
+    # Otherwise return None to indicate it's not available yet
+    profit_loss = None
+    if cards_with_ebay_pricing > 0:
+        profit_loss = total_value - total_invested
+
     return {
         "total_cards": total_cards,
         "total_value": total_value,
         "total_invested": total_invested,
-        "profit_loss": total_value - total_invested
+        "profit_loss": profit_loss,
+        "has_ebay_data": cards_with_ebay_pricing > 0
     }
 
 # ==============================
@@ -227,7 +245,7 @@ def bulk_update_values(request: BulkUpdateValuesRequest, db: Session = Depends(g
             if card:
                 card.ebay_avg_price = update.ebay_avg_price
                 card.current_value = update.current_value
-                card.last_price_check = datetime.utcnow()
+                card.last_price_check = datetime.now(timezone.utc)
                 updated_count += 1
 
         db.commit()
@@ -264,7 +282,7 @@ def check_ebay_price(request: EbayPriceCheckRequest, db: Session = Depends(get_d
     return EbayPriceCheckResponse(
         avg_sold_price=None,  # Will be populated by eBay API
         price_range="API not configured",  # e.g., "$20.00 - $35.00"
-        last_checked=datetime.utcnow().isoformat(),
+        last_checked=datetime.now(timezone.utc).isoformat(),
         ebay_url=ebay_url
     )
 
@@ -306,6 +324,312 @@ def bulk_import_cards(import_data: BulkCardImport, db: Session = Depends(get_db)
         failed=failed_count,
         errors=errors
     )
+
+# ==============================
+# EBAY API ENDPOINTS
+# ==============================
+
+class EbayPriceResult(BaseModel):
+    """Response model for eBay price check"""
+    card_id: int
+    player: str
+    avg_sold_price: Optional[float] = None
+    min_price: Optional[float] = None
+    max_price: Optional[float] = None
+    listing_count: int
+    sample_urls: List[str]
+    search_keywords: str
+    last_checked: str
+    success: bool
+    message: Optional[str] = None
+
+@app.get("/ebay/test-connection")
+def test_ebay_connection():
+    """Test eBay API connection and credentials"""
+    try:
+        ebay = eBayAPI()
+        result = ebay.test_connection()
+        return result
+    except eBayAPIError as e:
+        logger.error(f"eBay connection test failed: {e}")
+        return {
+            "success": False,
+            "message": str(e),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Unexpected error testing eBay connection: {e}")
+        return {
+            "success": False,
+            "message": f"Unexpected error: {str(e)}",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+
+@app.post("/cards/{card_id}/check-ebay-price", response_model=EbayPriceResult)
+def check_card_ebay_price(card_id: int, db: Session = Depends(get_db)):
+    """
+    Check eBay prices for a specific card.
+    Searches sold listings and updates the card's ebay_avg_price and last_price_check.
+    """
+    # Get the card
+    card = db.query(Card).filter(Card.id == card_id).first()
+    if not card:
+        raise HTTPException(status_code=404, detail="Card not found")
+
+    try:
+        # Initialize eBay API
+        ebay = eBayAPI()
+
+        # Search for sold listings
+        logger.info(f"Checking eBay price for card {card_id}: {card.player}")
+        result = ebay.search_sold_listings(
+            player=card.player,
+            year=card.year,
+            set_name=card.set_name,
+            card_number=card.card_number
+        )
+
+        # Update card in database
+        card.ebay_avg_price = result['avg_price']
+        card.last_price_check = datetime.now(timezone.utc)
+        db.commit()
+
+        timestamp = datetime.now(timezone.utc).isoformat()
+
+        # Return result
+        return EbayPriceResult(
+            card_id=card_id,
+            player=card.player,
+            avg_sold_price=result['avg_price'],
+            min_price=result['min_price'],
+            max_price=result['max_price'],
+            listing_count=result['listing_count'],
+            sample_urls=result['sample_urls'],
+            search_keywords=result['search_keywords'],
+            last_checked=timestamp,
+            success=True,
+            message=f"Found {result['listing_count']} sold listings" if result['listing_count'] > 0 else "No sold listings found"
+        )
+
+    except eBayAPIError as e:
+        logger.error(f"eBay API error for card {card_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"eBay API error: {str(e)}")
+    except Exception as e:
+        logger.error(f"Unexpected error checking eBay price for card {card_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+class BulkPriceCheckResponse(BaseModel):
+    """Response model for bulk price check"""
+    total_cards: int
+    successful: int
+    failed: int
+    results: List[EbayPriceResult]
+    errors: List[str]
+
+@app.post("/cards/check-tracked-prices", response_model=BulkPriceCheckResponse)
+def check_tracked_prices(db: Session = Depends(get_db)):
+    """
+    Check eBay prices for all cards marked as tracked_for_pricing.
+    Limited to 20 cards to respect rate limits.
+    """
+    # Get tracked cards (max 20)
+    tracked_cards = db.query(Card).filter(Card.tracked_for_pricing == True).limit(20).all()
+
+    if not tracked_cards:
+        return BulkPriceCheckResponse(
+            total_cards=0,
+            successful=0,
+            failed=0,
+            results=[],
+            errors=["No cards are marked for price tracking"]
+        )
+
+    try:
+        ebay = eBayAPI()
+    except eBayAPIError as e:
+        logger.error(f"Failed to initialize eBay API: {e}")
+        raise HTTPException(status_code=500, detail=f"eBay API initialization failed: {str(e)}")
+
+    results = []
+    errors = []
+    successful = 0
+    failed = 0
+
+    for idx, card in enumerate(tracked_cards, 1):
+        try:
+            logger.info(f"Checking price {idx}/{len(tracked_cards)}: {card.player}")
+
+            # Search for sold listings
+            result = ebay.search_sold_listings(
+                player=card.player,
+                year=card.year,
+                set_name=card.set_name,
+                card_number=card.card_number
+            )
+
+            # Update card in database
+            card.ebay_avg_price = result['avg_price']
+            card.last_price_check = datetime.now(timezone.utc)
+            db.commit()
+
+            timestamp = datetime.now(timezone.utc).isoformat()
+
+            # Add to results
+            results.append(EbayPriceResult(
+                card_id=card.id,
+                player=card.player,
+                avg_sold_price=result['avg_price'],
+                min_price=result['min_price'],
+                max_price=result['max_price'],
+                listing_count=result['listing_count'],
+                sample_urls=result['sample_urls'],
+                search_keywords=result['search_keywords'],
+                last_checked=timestamp,
+                success=True,
+                message=f"Found {result['listing_count']} sold listings" if result['listing_count'] > 0 else "No sold listings found"
+            ))
+
+            successful += 1
+
+        except eBayAPIError as e:
+            logger.error(f"eBay API error for card {card.id}: {e}")
+            errors.append(f"{card.player}: {str(e)}")
+            failed += 1
+            db.rollback()
+
+        except Exception as e:
+            logger.error(f"Unexpected error for card {card.id}: {e}")
+            errors.append(f"{card.player}: Unexpected error - {str(e)}")
+            failed += 1
+            db.rollback()
+
+    return BulkPriceCheckResponse(
+        total_cards=len(tracked_cards),
+        successful=successful,
+        failed=failed,
+        results=results,
+        errors=errors
+    )
+
+@app.get("/ebay/rate-limit-stats")
+def get_rate_limit_stats():
+    """Get current eBay API rate limit statistics"""
+    try:
+        stats = rate_limiter.get_stats()
+        return stats
+    except Exception as e:
+        logger.error(f"Error getting rate limit stats: {e}")
+        return {
+            "error": str(e),
+            "count": 0,
+            "limit": 5000,
+            "remaining": 5000
+        }
+
+@app.post("/ebay/reset-rate-limit")
+def reset_rate_limit():
+    """Reset rate limit counter (admin only)"""
+    try:
+        rate_limiter.reset()
+        return {"message": "Rate limit counter reset successfully"}
+    except Exception as e:
+        logger.error(f"Error resetting rate limit: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ================================
+# VERSION & UPDATE ENDPOINTS
+# ================================
+
+@app.get("/version/current")
+def get_current_version():
+    """Get current application version"""
+    try:
+        with open('version.json', 'r') as f:
+            version_data = json.load(f)
+        return version_data
+    except FileNotFoundError:
+        return {
+            "version": "0.2.0",
+            "release_date": "2025-01-03",
+            "github_repo": "BaseballBinder/BaseballBinder"
+        }
+    except Exception as e:
+        logger.error(f"Error reading version: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/version/check-update")
+async def check_for_updates():
+    """Check if a newer version is available on GitHub"""
+    try:
+        # Read local version
+        with open('version.json', 'r') as f:
+            local_version = json.load(f)
+
+        # Check GitHub for latest release
+        import requests
+        github_repo = local_version.get('github_repo', 'BaseballBinder/BaseballBinder')
+        github_api_url = f"https://api.github.com/repos/{github_repo}/releases/latest"
+
+        response = requests.get(github_api_url, timeout=5)
+
+        if response.status_code == 404:
+            # No releases yet
+            return {
+                "update_available": False,
+                "current_version": local_version['version'],
+                "message": "No releases available yet"
+            }
+
+        response.raise_for_status()
+        latest_release = response.json()
+
+        # Parse version strings (assuming semver: v0.2.0)
+        latest_version = latest_release['tag_name'].lstrip('v')
+        current_version = local_version['version']
+
+        # Simple version comparison (you can use packaging.version for more robust comparison)
+        update_available = latest_version != current_version
+
+        result = {
+            "update_available": update_available,
+            "current_version": current_version,
+            "latest_version": latest_version,
+            "release_date": latest_release.get('published_at'),
+            "release_notes": latest_release.get('body', ''),
+            "download_url": None,
+            "installer_url": None
+        }
+
+        # Find Windows executable in assets
+        for asset in latest_release.get('assets', []):
+            if asset['name'].endswith('.exe'):
+                result['installer_url'] = asset['browser_download_url']
+                result['download_url'] = asset['browser_download_url']
+                result['file_size'] = asset['size']
+                break
+
+        return result
+
+    except requests.exceptions.Timeout:
+        return {
+            "update_available": False,
+            "error": "Connection timeout while checking for updates"
+        }
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error checking for updates: {e}")
+        return {
+            "update_available": False,
+            "error": "Could not connect to update server"
+        }
+    except Exception as e:
+        logger.error(f"Unexpected error checking updates: {e}")
+        return {
+            "update_available": False,
+            "error": str(e)
+        }
+
 
 if __name__ == "__main__":
     import uvicorn

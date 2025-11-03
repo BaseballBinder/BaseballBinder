@@ -57,6 +57,9 @@ desktop.ini
 .env
 .env.local
 
+# eBay API rate limiting
+ebay_rate_limit.json
+
 # Logs
 *.log
 logs/
@@ -71,3 +74,9 @@ htmlcov/
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
+# PyInstaller
+build/
+dist/
+*.spec.bak
+releases/

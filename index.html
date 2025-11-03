@@ -1074,13 +1074,13 @@
                 <span>BaseballBinder Pro</span>
             </div>
             <div class="nav-links">
-                <div class="nav-link active" onclick="showPage('home')">Dashboard</div>
-                <div class="nav-link" onclick="showPage('import')">Import</div>
-                <div class="nav-link" onclick="showPage('add')">Add Card</div>
-                <div class="nav-link" onclick="showPage('collection')">Collection</div>
-                <div class="nav-link" onclick="showPage('pricing')">Pricing</div>
-                <div class="nav-link" onclick="showPage('suggestions')">Feedback</div>
-                <div class="nav-link" onclick="showPage('admin')">Admin</div>
+                <div class="nav-link active" onclick="showPage('home', event)">Dashboard</div>
+                <div class="nav-link" onclick="showPage('import', event)">Import</div>
+                <div class="nav-link" onclick="showPage('add', event)">Add Card</div>
+                <div class="nav-link" onclick="showPage('collection', event)">Collection</div>
+                <div class="nav-link" onclick="showPage('pricing', event)">Pricing</div>
+                <div class="nav-link" onclick="showPage('suggestions', event)">Feedback</div>
+                <div class="nav-link" onclick="showPage('admin', event)">Admin</div>
             </div>
         </div>
     </nav>
@@ -1251,9 +1251,13 @@
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--spacing-4);">
                         <div class="form-group">
                             <label class="form-label">Set Name</label>
-                            <select id="set_name" class="form-select" required>
+                            <select id="set_name" class="form-select" required onchange="handleSetSelection()">
                                 <option value="">Select a set</option>
                             </select>
+                            <input type="text" id="set_name_manual" class="form-input" placeholder="Enter custom set name" style="display: none;" required>
+                            <small style="color: var(--bb-text-secondary); font-size: var(--font-sm); margin-top: var(--spacing-1); display: block;">
+                                Select from checklist or choose "+ Manual Entry" to type custom set
+                            </small>
                         </div>
 
                         <div class="form-group">
@@ -1421,6 +1425,26 @@
             <div class="content-card">
                 <h2>Price Tracking</h2>
                 <p style="color: var(--bb-text-secondary); margin-bottom: var(--spacing-6);">Track prices for up to 20 cards and check current market values</p>
+
+                <!-- eBay API Rate Limit Display -->
+                <div id="rateLimitDisplay" style="padding: var(--spacing-3); background: var(--bb-card-bg); border-radius: 8px; margin-bottom: var(--spacing-4); border-left: 3px solid var(--bb-accent);">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <strong>eBay API Usage Today:</strong>
+                            <span id="apiCallsToday" style="color: var(--bb-accent); font-weight: 600;">0</span> /
+                            <span id="apiCallsLimit">5000</span>
+                        </div>
+                        <div style="font-size: var(--font-sm); color: var(--bb-text-secondary);">
+                            <span id="apiCallsRemaining">5000</span> remaining
+                        </div>
+                    </div>
+                    <div style="margin-top: var(--spacing-2); background: var(--bb-bg); border-radius: 4px; height: 8px; overflow: hidden;">
+                        <div id="rateLimitBar" style="height: 100%; background: var(--bb-accent); width: 0%; transition: width 0.3s ease;"></div>
+                    </div>
+                    <div id="rateLimitWarning" style="margin-top: var(--spacing-2); font-size: var(--font-sm); color: var(--bb-warning); display: none;">
+                        ⚠️ Approaching daily limit - use API calls conservatively
+                    </div>
+                </div>
 
                 <div style="display: flex; gap: var(--spacing-3); margin-bottom: var(--spacing-6);">
                     <button class="btn btn-secondary" onclick="openManageTracking()">
@@ -1842,6 +1866,56 @@
         </div>
     </div>
 
+    <!-- GENERIC MODAL -->
+    <div id="genericModal" class="modal">
+        <div class="modal-content">
+            <div id="genericModalContent"></div>
+        </div>
+    </div>
+
+    <!-- Update Notification Modal -->
+    <div id="updateModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div style="padding: var(--spacing-6);">
+                <div style="text-align: center; margin-bottom: var(--spacing-4);">
+                    <div style="font-size: 48px; margin-bottom: var(--spacing-2);">🎉</div>
+                    <h2 style="margin: 0; color: var(--bb-primary);">Update Available!</h2>
+                </div>
+
+                <div style="background: var(--bb-bg-tertiary); padding: var(--spacing-4); border-radius: var(--radius-md); margin-bottom: var(--spacing-4);">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: var(--spacing-2);">
+                        <span style="font-weight: 500;">Current Version:</span>
+                        <span id="currentVersion" style="color: var(--bb-text-secondary);">-</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 500;">New Version:</span>
+                        <span id="latestVersion" style="color: var(--bb-accent); font-weight: 600;">-</span>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: var(--spacing-4);">
+                    <h3 style="margin: 0 0 var(--spacing-2) 0; font-size: var(--font-md);">What's New:</h3>
+                    <div id="releaseNotes" style="background: var(--bb-bg-secondary); padding: var(--spacing-3); border-radius: var(--radius-sm); max-height: 200px; overflow-y: auto; font-size: var(--font-sm); line-height: 1.6;">
+                        Loading release notes...
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: var(--spacing-3); justify-content: center;">
+                    <button id="downloadUpdateBtn" class="btn btn-primary" onclick="downloadUpdate()" style="flex: 1; max-width: 200px;">
+                        <span>Download Update</span>
+                    </button>
+                    <button class="btn btn-secondary" onclick="dismissUpdate()" style="flex: 1; max-width: 200px;">
+                        Remind Me Later
+                    </button>
+                </div>
+
+                <div style="margin-top: var(--spacing-3); text-align: center; font-size: var(--font-sm); color: var(--bb-text-secondary);">
+                    <span id="fileSizeInfo"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // API Configuration
         const API_URL = 'http://localhost:8000';
@@ -1869,7 +1943,7 @@
         // ================================
         // NAVIGATION
         // ================================
-        function showPage(pageName) {
+        function showPage(pageName, event) {
             // Remove active class from all pages and nav links
             document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
             document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
@@ -1887,7 +1961,18 @@
 
             // Show selected page
             document.getElementById(`page-${pageName}`).classList.add('active');
-            event?.target?.classList.add('active');
+
+            // Add active class to the clicked nav link or find it by page name
+            if (event?.target) {
+                event.target.classList.add('active');
+            } else {
+                // Find the nav link that corresponds to this page
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    if (link.getAttribute('onclick')?.includes(`'${pageName}'`)) {
+                        link.classList.add('active');
+                    }
+                });
+            }
 
             // Load data for specific pages
             if (pageName === 'home') {
@@ -1902,6 +1987,7 @@
                 loadSetDropdown();
             } else if (pageName === 'pricing') {
                 loadTrackedCount();
+                loadRateLimitStats(); // Load eBay API usage stats
             } else if (pageName === 'admin') {
                 loadChecklistRequests();
             }
@@ -1923,17 +2009,24 @@
                 const profitLossEl = document.getElementById('homeProfitLoss');
                 const changeEl = document.getElementById('homeProfitLossChange');
 
-                profitLossEl.textContent = `$${Math.abs(profitLoss).toFixed(2)}`;
-
-                if (profitLoss > 0) {
-                    changeEl.textContent = 'Positive return';
-                    changeEl.className = 'stat-change positive';
-                } else if (profitLoss < 0) {
-                    changeEl.textContent = 'Negative return';
-                    changeEl.className = 'stat-change negative';
-                } else {
-                    changeEl.textContent = 'Break even';
+                // Only show profit/loss if we have eBay pricing data
+                if (profitLoss === null || !stats.has_ebay_data) {
+                    profitLossEl.textContent = '—';
+                    changeEl.textContent = 'eBay API not configured';
                     changeEl.className = 'stat-change';
+                } else {
+                    profitLossEl.textContent = `$${Math.abs(profitLoss).toFixed(2)}`;
+
+                    if (profitLoss > 0) {
+                        changeEl.textContent = 'Positive return';
+                        changeEl.className = 'stat-change positive';
+                    } else if (profitLoss < 0) {
+                        changeEl.textContent = 'Negative return';
+                        changeEl.className = 'stat-change negative';
+                    } else {
+                        changeEl.textContent = 'Break even';
+                        changeEl.className = 'stat-change';
+                    }
                 }
             } catch (error) {
                 console.error('Error loading stats:', error);
@@ -2328,8 +2421,14 @@
                 if (card.autograph) details.push('AUTO');
                 if (card.numbered) details.push(`/${card.numbered}`);
 
+                // Show eBay price info if available
+                let ebayPriceInfo = '';
+                if (card.ebay_avg_price) {
+                    ebayPriceInfo = `<div style="font-size: var(--font-sm); color: var(--bb-accent);">eBay Avg: $${card.ebay_avg_price.toFixed(2)}</div>`;
+                }
+
                 html += `
-                    <div class="compact-card">
+                    <div class="compact-card" id="card-${card.id}">
                         <div class="compact-card-info">
                             <div class="compact-card-title">${card.player || 'Unknown Player'}</div>
                             <div class="compact-card-details">
@@ -2339,8 +2438,10 @@
                         <div class="compact-card-value" style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
                             <div style="font-size: var(--font-sm); color: var(--bb-text-secondary);">Paid: $${(card.price_paid || 0).toFixed(2)}</div>
                             <div style="font-weight: 600; color: var(--bb-text-primary);">Value: $${(card.current_value || 0).toFixed(2)}</div>
+                            ${ebayPriceInfo}
                         </div>
                         <div class="compact-card-actions">
+                            <button class="btn btn-sm btn-primary" onclick="checkEbayPrice(${card.id})" id="ebay-btn-${card.id}">Check eBay</button>
                             <button class="btn btn-sm btn-secondary" onclick="editCard(${card.id})">Edit</button>
                             <button class="btn btn-sm btn-danger" onclick="deleteCard(${card.id})">Delete</button>
                         </div>
@@ -2358,7 +2459,7 @@
 
             cards.forEach(card => {
                 html += `
-                    <div class="visual-card">
+                    <div class="visual-card" id="card-${card.id}">
                         <div class="visual-card-header">
                             <div class="visual-card-player">${card.player || 'Unknown Player'}</div>
                             <div class="visual-card-set">${card.set_name || 'Unknown Set'}</div>
@@ -2380,9 +2481,14 @@
                                 <span class="visual-card-detail-label">Team</span>
                                 <span class="visual-card-detail-value">${card.team || '—'}</span>
                             </div>
+                            ${card.ebay_avg_price ? `<div class="visual-card-detail">
+                                <span class="visual-card-detail-label">eBay Avg</span>
+                                <span class="visual-card-detail-value" style="color: var(--bb-accent);">$${card.ebay_avg_price.toFixed(2)}</span>
+                            </div>` : ''}
                         </div>
                         <div class="visual-card-value">$${(card.current_value || 0).toFixed(2)}</div>
                         <div class="visual-card-actions">
+                            <button class="btn btn-sm btn-primary" onclick="checkEbayPrice(${card.id})" id="ebay-btn-${card.id}" style="flex: 1;">Check eBay</button>
                             <button class="btn btn-sm btn-secondary" onclick="editCard(${card.id})" style="flex: 1;">Edit</button>
                             <button class="btn btn-sm btn-danger" onclick="deleteCard(${card.id})" style="flex: 1;">Delete</button>
                         </div>
@@ -2564,6 +2670,20 @@
                 console.error('Error rescanning:', error);
                 showMessage('Error rescanning checklists', 'error');
             }
+        }
+
+        // ================================
+        // GENERIC MODAL FUNCTIONS
+        // ================================
+        function showModal(htmlContent) {
+            const modalContent = document.getElementById('genericModalContent');
+            modalContent.innerHTML = htmlContent;
+            document.getElementById('genericModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('genericModal').classList.remove('active');
+            document.getElementById('genericModalContent').innerHTML = '';
         }
 
         function openRequestChecklistModal() {
@@ -2914,9 +3034,33 @@
                     html += `<option value="${set}">${set}</option>`;
                 });
 
+                // Add manual entry option
+                html += '<option value="" disabled>───────────────────</option>';
+                html += '<option value="MANUAL_ENTRY">+ Manual Entry</option>';
+
                 dropdown.innerHTML = html;
             } catch (error) {
                 console.error('Error loading sets:', error);
+            }
+        }
+
+        function handleSetSelection() {
+            const dropdown = document.getElementById('set_name');
+            const manualInput = document.getElementById('set_name_manual');
+
+            if (dropdown.value === 'MANUAL_ENTRY') {
+                // Switch to manual entry mode
+                dropdown.style.display = 'none';
+                dropdown.removeAttribute('required');
+                manualInput.style.display = 'block';
+                manualInput.setAttribute('required', 'required');
+                manualInput.focus();
+            } else {
+                // Use dropdown mode
+                dropdown.style.display = 'block';
+                dropdown.setAttribute('required', 'required');
+                manualInput.style.display = 'none';
+                manualInput.removeAttribute('required');
             }
         }
 
@@ -2995,6 +3139,36 @@
         // ================================
         // PRICE TRACKING
         // ================================
+        async function loadRateLimitStats() {
+            try {
+                const response = await fetch(`${API_URL}/ebay/rate-limit-stats`);
+                const stats = await response.json();
+
+                document.getElementById('apiCallsToday').textContent = stats.count || 0;
+                document.getElementById('apiCallsLimit').textContent = stats.limit || 5000;
+                document.getElementById('apiCallsRemaining').textContent = stats.remaining || 5000;
+
+                // Update progress bar
+                const percentage = stats.percentage_used || 0;
+                const bar = document.getElementById('rateLimitBar');
+                bar.style.width = `${percentage}%`;
+
+                // Change color based on usage
+                if (percentage >= 80) {
+                    bar.style.background = '#ef4444'; // Red
+                    document.getElementById('rateLimitWarning').style.display = 'block';
+                } else if (percentage >= 60) {
+                    bar.style.background = '#f59e0b'; // Orange
+                    document.getElementById('rateLimitWarning').style.display = 'none';
+                } else {
+                    bar.style.background = 'var(--bb-accent)'; // Blue
+                    document.getElementById('rateLimitWarning').style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error loading rate limit stats:', error);
+            }
+        }
+
         async function loadTrackedCount() {
             try {
                 const response = await fetch(`${API_URL}/cards/tracked/`);
@@ -3108,55 +3282,254 @@
             }
         }
 
-        async function checkTrackedPrices() {
+        // ================================
+        // EBAY PRICE CHECKING
+        // ================================
+
+        async function checkEbayPrice(cardId) {
+            const button = document.getElementById(`ebay-btn-${cardId}`);
+            const originalText = button.textContent;
+
             try {
-                const response = await fetch(`${API_URL}/cards/tracked/`);
-                const cards = await response.json();
+                button.disabled = true;
+                button.textContent = 'Checking...';
 
-                if (cards.length === 0) {
-                    showMessage('No cards are being tracked', 'error');
-                    return;
+                const response = await fetch(`${API_URL}/cards/${cardId}/check-ebay-price`, {
+                    method: 'POST'
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to check eBay price');
                 }
 
-                document.getElementById('checkPricesBtn').disabled = true;
-                document.getElementById('checkPricesBtn').textContent = 'Checking prices...';
+                const result = await response.json();
 
-                const results = [];
-                for (const card of cards) {
-                    try {
-                        const priceResponse = await fetch(`${API_URL}/ebay/check-price`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                card_id: card.id,
-                                player: card.player,
-                                set_name: card.set_name,
-                                year: card.year,
-                                card_number: card.card_number,
-                                variety: card.variety,
-                                parallel: card.parallel
-                            })
-                        });
+                // Show result modal
+                showEbayPriceModal(result);
 
-                        const priceData = await priceResponse.json();
-                        results.push({
-                            card,
-                            priceData
-                        });
-                    } catch (error) {
-                        console.error('Error checking price for card:', card.id, error);
-                    }
+                // Reload cards to show updated price
+                loadCards();
+
+                // Update rate limit stats
+                if (typeof loadRateLimitStats === 'function') loadRateLimitStats();
+
+                showMessage(result.message, 'success');
+
+            } catch (error) {
+                console.error('Error checking eBay price:', error);
+                showMessage(error.message || 'Error checking eBay price', 'error');
+            } finally {
+                button.disabled = false;
+                button.textContent = originalText;
+            }
+        }
+
+        async function checkTrackedPrices() {
+            const button = document.getElementById('checkPricesBtn');
+
+            try {
+                button.disabled = true;
+                button.textContent = 'Checking prices...';
+
+                showMessage('Checking prices for tracked cards (max 20)...', 'info');
+
+                const response = await fetch(`${API_URL}/cards/check-tracked-prices`, {
+                    method: 'POST'
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to check prices');
                 }
 
-                displayPriceResults(results);
+                const result = await response.json();
 
-                document.getElementById('checkPricesBtn').disabled = false;
-                document.getElementById('checkPricesBtn').textContent = 'Check Prices';
+                // Display results
+                displayBulkPriceResults(result);
+
+                // Show summary message
+                if (result.successful > 0) {
+                    showMessage(`Successfully checked ${result.successful} of ${result.total_cards} cards`, 'success');
+                } else {
+                    showMessage('No prices were successfully checked', 'error');
+                }
+
+                // Reload cards to show updated prices
+                if (typeof loadCards === 'function') loadCards();
+                if (typeof loadStats === 'function') loadStats();
+
             } catch (error) {
                 console.error('Error checking prices:', error);
-                showMessage('Error checking prices', 'error');
-                document.getElementById('checkPricesBtn').disabled = false;
-                document.getElementById('checkPricesBtn').textContent = 'Check Prices';
+                showMessage(error.message || 'Error checking prices', 'error');
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Check Prices';
+            }
+        }
+
+        function showEbayPriceModal(result) {
+            const priceRange = result.min_price && result.max_price
+                ? `$${result.min_price.toFixed(2)} - $${result.max_price.toFixed(2)}`
+                : 'N/A';
+
+            const avgPrice = result.avg_sold_price
+                ? `$${result.avg_sold_price.toFixed(2)}`
+                : 'N/A';
+
+            let linksHtml = '';
+            if (result.sample_urls && result.sample_urls.length > 0) {
+                linksHtml = '<div style="margin-top: var(--spacing-3);"><strong>Sample Listings:</strong><ul style="margin-top: var(--spacing-2);">';
+                result.sample_urls.forEach((url, idx) => {
+                    linksHtml += `<li><a href="${url}" target="_blank" class="btn btn-sm btn-secondary" style="margin: 4px 0;">View Listing ${idx + 1}</a></li>`;
+                });
+                linksHtml += '</ul></div>';
+            }
+
+            // Show helpful message if no results in sandbox
+            let noResultsMsg = '';
+            if (result.listing_count === 0) {
+                noResultsMsg = `
+                    <div style="margin-top: var(--spacing-3); padding: var(--spacing-3); background: var(--bb-card-bg); border-left: 3px solid var(--bb-accent); border-radius: 4px;">
+                        <strong style="color: var(--bb-accent);">ℹ️ No listings found</strong><br>
+                        <span style="color: var(--bb-text-secondary); font-size: var(--font-sm);">
+                            This is expected in <strong>sandbox mode</strong>. The eBay sandbox has limited test data.<br>
+                            <em>Production mode will return real eBay pricing data.</em>
+                        </span>
+                    </div>
+                `;
+            }
+
+            const modalContent = `
+                <div style="padding: var(--spacing-4);">
+                    <h3>eBay Price Check Results</h3>
+                    <div style="margin-top: var(--spacing-4);">
+                        <p><strong>Player:</strong> ${result.player}</p>
+                        <p><strong>Search:</strong> ${result.search_keywords}</p>
+                        <p><strong>Listings Found:</strong> ${result.listing_count}</p>
+                        <p><strong>Average Sold Price:</strong> ${avgPrice}</p>
+                        <p><strong>Price Range:</strong> ${priceRange}</p>
+                        ${linksHtml}
+                        ${noResultsMsg}
+                        <p style="font-size: var(--font-sm); color: var(--bb-text-secondary); margin-top: var(--spacing-3);">
+                            Last checked: ${new Date(result.last_checked).toLocaleString()}
+                        </p>
+                    </div>
+                    <div style="margin-top: var(--spacing-4);">
+                        <button class="btn btn-primary" onclick="closeModal()">Close</button>
+                        ${result.avg_sold_price ? `<button class="btn btn-secondary" onclick="updateCardValueFromEbay(${result.card_id}, ${result.avg_sold_price})">Update Card Value</button>` : ''}
+                    </div>
+                </div>
+            `;
+
+            showModal(modalContent);
+        }
+
+        function displayBulkPriceResults(result) {
+            const container = document.getElementById('priceResultsContainer');
+
+            if (!result.results || result.results.length === 0) {
+                container.innerHTML = '<div class="empty-state">No results found</div>';
+                return;
+            }
+
+            let html = `
+                <div class="content-card" style="margin-top: var(--spacing-4);">
+                    <h3>Price Check Results</h3>
+                    <div style="margin-bottom: var(--spacing-3); color: var(--bb-text-secondary);">
+                        Checked ${result.total_cards} cards | Successful: ${result.successful} | Failed: ${result.failed}
+                    </div>
+            `;
+
+            if (result.errors && result.errors.length > 0) {
+                html += `
+                    <div class="alert alert-warning" style="margin-bottom: var(--spacing-3);">
+                        <strong>Errors:</strong>
+                        <ul style="margin: var(--spacing-2) 0 0 var(--spacing-4);">
+                            ${result.errors.map(err => `<li>${err}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            html += `
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Card</th>
+                                <th>Avg Sold Price</th>
+                                <th>Price Range</th>
+                                <th>Listings</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            result.results.forEach(item => {
+                const priceRange = item.min_price && item.max_price
+                    ? `$${item.min_price.toFixed(2)} - $${item.max_price.toFixed(2)}`
+                    : 'N/A';
+
+                const avgPrice = item.avg_sold_price
+                    ? `$${item.avg_sold_price.toFixed(2)}`
+                    : 'N/A';
+
+                const sampleLink = item.sample_urls && item.sample_urls.length > 0
+                    ? `<a href="${item.sample_urls[0]}" target="_blank" class="btn btn-sm btn-secondary">View on eBay</a>`
+                    : '';
+
+                html += `
+                    <tr>
+                        <td style="font-weight: 600;">${item.player}</td>
+                        <td>${avgPrice}</td>
+                        <td>${priceRange}</td>
+                        <td>${item.listing_count}</td>
+                        <td>
+                            ${sampleLink}
+                            ${item.avg_sold_price ? `<button class="btn btn-sm btn-primary" onclick="updateCardValueFromEbay(${item.card_id}, ${item.avg_sold_price})">Update Value</button>` : ''}
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        async function updateCardValueFromEbay(cardId, ebayPrice) {
+            try {
+                const response = await fetch(`${API_URL}/cards/${cardId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        current_value: ebayPrice
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to update card value');
+                }
+
+                showMessage('Card value updated successfully', 'success');
+
+                // Reload cards and stats
+                if (typeof loadCards === 'function') loadCards();
+                if (typeof loadStats === 'function') loadStats();
+
+                // Close modal if open
+                if (typeof closeModal === 'function') closeModal();
+
+            } catch (error) {
+                console.error('Error updating card value:', error);
+                showMessage('Error updating card value', 'error');
             }
         }
 
@@ -3492,8 +3865,15 @@
         document.getElementById('cardForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
+            // Check if manual entry is being used
+            const dropdown = document.getElementById('set_name');
+            const manualInput = document.getElementById('set_name_manual');
+            const setNameValue = (manualInput.style.display !== 'none' && manualInput.value)
+                ? manualInput.value
+                : dropdown.value;
+
             const data = {
-                set_name: document.getElementById('set_name').value || null,
+                set_name: setNameValue || null,
                 card_number: document.getElementById('card_number').value || null,
                 player: document.getElementById('player').value || null,
                 team: document.getElementById('team').value || null,
@@ -3523,6 +3903,16 @@
 
                 showMessage(editingCardId ? 'Card updated successfully' : 'Card added successfully', 'success');
                 document.getElementById('cardForm').reset();
+
+                // Reset dropdown/manual input visibility
+                const dropdown = document.getElementById('set_name');
+                const manualInput = document.getElementById('set_name_manual');
+                dropdown.style.display = 'block';
+                dropdown.setAttribute('required', 'required');
+                manualInput.style.display = 'none';
+                manualInput.removeAttribute('required');
+                manualInput.value = '';
+
                 editingCardId = null;
                 loadCards();
             } catch (error) {
@@ -3587,10 +3977,100 @@
         // ================================
         // INITIALIZATION
         // ================================
-        document.addEventListener('DOMContentLoaded', () => {
+        // ================================
+        // UPDATE SYSTEM
+        // ================================
+
+        let updateInfo = null;
+
+        async function checkForUpdates() {
+            try {
+                const response = await fetch(`${API_URL}/version/check-update`);
+                const data = await response.json();
+
+                if (data.update_available && data.installer_url) {
+                    updateInfo = data;
+                    showUpdateNotification(data);
+                }
+            } catch (error) {
+                console.error('Error checking for updates:', error);
+            }
+        }
+
+        function showUpdateNotification(data) {
+            document.getElementById('currentVersion').textContent = `v${data.current_version}`;
+            document.getElementById('latestVersion').textContent = `v${data.latest_version}`;
+
+            // Format release notes
+            let releaseNotes = data.release_notes || 'No release notes available.';
+
+            // Convert markdown-style formatting to HTML
+            releaseNotes = releaseNotes
+                .replace(/###\s+(.+)/g, '<h4 style="margin: var(--spacing-2) 0;">$1</h4>')
+                .replace(/##\s+(.+)/g, '<h3 style="margin: var(--spacing-3) 0;">$1</h3>')
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                .replace(/^[-*]\s+(.+)/gm, '<li>$1</li>')
+                .replace(/(<li>.*<\/li>)/s, '<ul style="margin: var(--spacing-2) 0; padding-left: var(--spacing-4);">$1</ul>')
+                .replace(/\n\n/g, '<br><br>');
+
+            document.getElementById('releaseNotes').innerHTML = releaseNotes;
+
+            // Show file size if available
+            if (data.file_size) {
+                const sizeMB = (data.file_size / (1024 * 1024)).toFixed(2);
+                document.getElementById('fileSizeInfo').textContent = `Download size: ${sizeMB} MB`;
+            }
+
+            document.getElementById('updateModal').classList.add('active');
+        }
+
+        function downloadUpdate() {
+            if (updateInfo && updateInfo.installer_url) {
+                // Open download URL in new window
+                window.open(updateInfo.installer_url, '_blank');
+
+                // Show message
+                showMessage('Download started! Please install the update after download completes.', 'success');
+                dismissUpdate();
+            }
+        }
+
+        function dismissUpdate() {
+            document.getElementById('updateModal').classList.remove('active');
+            updateInfo = null;
+
+            // Store dismissal time in localStorage (optional - to not show again for a day)
+            localStorage.setItem('updateDismissed', Date.now());
+        }
+
+        function shouldCheckForUpdates() {
+            const lastDismissed = localStorage.getItem('updateDismissed');
+            if (!lastDismissed) return true;
+
+            // Check again after 24 hours
+            const dayInMs = 24 * 60 * 60 * 1000;
+            return (Date.now() - parseInt(lastDismissed)) > dayInMs;
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
             setupSuggestionForm();
             setViewMode('compact'); // Initialize default view mode
             showPage('home');
+            // Ensure dashboard stats load on initial page load
+            await Promise.all([loadStats(), loadFunStats()]);
+
+            // Check for updates on startup (after a short delay)
+            if (shouldCheckForUpdates()) {
+                setTimeout(() => checkForUpdates(), 2000);
+            }
+
+            // Close generic modal when clicking outside
+            document.getElementById('genericModal').addEventListener('click', (e) => {
+                if (e.target.id === 'genericModal') {
+                    closeModal();
+                }
+            });
         });
     </script>
 </body>

@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "release_date": "2025-01-03",
+  "min_supported_version": "0.2.0",
+  "github_repo": "BaseballBinder/BaseballBinder",
+  "release_notes": [
+    "Added eBay API integration for price checking",
+    "Implemented manual set entry for cards not in checklists",
+    "Added rate limiting system for eBay API calls",
+    "Fixed datetime deprecation warnings",
+    "Improved dashboard statistics display"
+  ]
+}
