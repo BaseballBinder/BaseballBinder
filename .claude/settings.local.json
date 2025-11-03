@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(if not exist checklists mkdir checklists)",
+      "Bash(dir)",
+      "mcp__ide__getDiagnostics",
+      "Bash(python:*)",
+      "Bash(python -c:*)",
+      "Bash(curl:*)",
+      "Bash(python -m uvicorn:*)",
+      "Bash(copy index.html index.html.backup)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

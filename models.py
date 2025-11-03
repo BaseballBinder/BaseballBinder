@@ -7,7 +7,7 @@ Base = declarative_base()
 
 class Card(Base):
     __tablename__ = 'cards'
-    
+
     id = Column(Integer, primary_key=True, index=True)
     set_name = Column(String, index=True)
     card_number = Column(String, index=True)
@@ -25,7 +25,12 @@ class Card(Base):
     location = Column(String)
     notes = Column(String)
     quantity = Column(Integer, default=1)
-    
+
+    # eBay Price Tracking fields
+    tracked_for_pricing = Column(Boolean, default=False, index=True)
+    last_price_check = Column(DateTime, nullable=True)
+    ebay_avg_price = Column(Float, nullable=True)
+
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

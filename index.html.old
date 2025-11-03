@@ -1,0 +1,4640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="BaseballBinder - The ultimate digital baseball card collection manager. Import checklists, track your cards, and manage your collection with ease.">
+    <meta name="keywords" content="baseball cards, card collection, baseball binder, sports cards, trading cards, collection manager">
+    <title>BaseballBinder - Your Digital Card Collection Manager</title>
+
+    <!-- Lottie Animation Library -->
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@2.0.4/dist/lottie-player.js"></script>
+
+    <!-- BaseballBinder Pro Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            /* BaseballBinder Pro Color Palette */
+            --bb-primary: #8C1D40;
+            --bb-primary-hover: #6D1632;
+            --bb-primary-light: #A82950;
+            --bb-secondary: #1E1E24;
+            --bb-secondary-light: #2A2A32;
+            --bb-accent: #F4EBD0;
+            --bb-neutral: #A9A9B3;
+            --bb-highlight: #2F4E78;
+            --bb-highlight-hover: #243D5E;
+
+            /* Semantic Colors */
+            --bb-success: #24A148;
+            --bb-error: #DA1E28;
+            --bb-warning: #F1C21B;
+            --bb-info: #0F62FE;
+
+            /* Background System */
+            --bb-bg-primary: #121216;
+            --bb-bg-secondary: #1E1E24;
+            --bb-bg-tertiary: #2A2A32;
+            --bb-bg-elevated: #353540;
+
+            /* Text System */
+            --bb-text-primary: #F4EBD0;
+            --bb-text-secondary: #A9A9B3;
+            --bb-text-tertiary: #6B6B76;
+            --bb-text-inverse: #121216;
+
+            /* Border System */
+            --bb-border-subtle: rgba(169, 169, 179, 0.15);
+            --bb-border-medium: rgba(169, 169, 179, 0.25);
+            --bb-border-strong: rgba(169, 169, 179, 0.35);
+
+            /* Spacing Scale (4px base) */
+            --spacing-1: 4px;
+            --spacing-2: 8px;
+            --spacing-3: 12px;
+            --spacing-4: 16px;
+            --spacing-5: 20px;
+            --spacing-6: 24px;
+            --spacing-8: 32px;
+            --spacing-10: 40px;
+            --spacing-12: 48px;
+
+            /* Typography Scale */
+            --font-xs: 0.75rem;      /* 12px */
+            --font-sm: 0.875rem;     /* 14px */
+            --font-base: 1rem;       /* 16px */
+            --font-md: 1.125rem;     /* 18px */
+            --font-lg: 1.25rem;      /* 20px */
+            --font-xl: 1.5rem;       /* 24px */
+            --font-2xl: 1.875rem;    /* 30px */
+            --font-3xl: 2.25rem;     /* 36px */
+
+            /* Border Radius */
+            --radius-sm: 4px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --radius-xl: 16px;
+
+            /* Shadows */
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.25);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.3);
+            --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.35);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--bb-bg-primary);
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            color: var(--bb-text-primary);
+            font-size: var(--font-base);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Navigation */
+        .navbar {
+            background: var(--bb-bg-secondary);
+            box-shadow: var(--shadow-sm);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid var(--bb-border-subtle);
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 var(--spacing-6);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 64px;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-3);
+            color: var(--bb-text-primary);
+            font-size: var(--font-lg);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .brand-logo {
+            height: 32px;
+            width: auto;
+            transition: transform 0.2s ease;
+        }
+
+        .brand-logo:hover {
+            transform: scale(1.05);
+        }
+
+        .brand-text {
+            color: var(--bb-text-primary);
+            font-size: var(--font-lg);
+            font-weight: 700;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: var(--spacing-2);
+            list-style: none;
+            align-items: center;
+        }
+
+        .nav-link {
+            padding: var(--spacing-2) var(--spacing-4);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-weight: 500;
+            font-size: var(--font-sm);
+            color: var(--bb-text-secondary);
+            position: relative;
+        }
+
+        .nav-link:hover {
+            background: var(--bb-bg-tertiary);
+            color: var(--bb-text-primary);
+        }
+
+        .nav-link.active {
+            background: var(--bb-highlight);
+            color: var(--bb-accent);
+        }
+
+        .nav-link:focus-visible {
+            outline: 2px solid var(--bb-primary);
+            outline-offset: 2px;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 32px 24px;
+        }
+
+        /* Page Sections */
+        .page {
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Animated Hero Banner */
+        .hero-animation-container {
+            position: relative;
+            height: 450px;
+            margin-bottom: 40px;
+            overflow: hidden;
+            border-radius: 20px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+        }
+
+        /* Open Binder in Corner */
+        .binder-corner {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            transform-origin: top left;
+            animation: slideInBinder 0.8s ease-out forwards;
+            opacity: 0;
+        }
+
+        @keyframes slideInBinder {
+            0% {
+                opacity: 0;
+                transform: translate(-50px, -50px) rotate(-10deg);
+            }
+            100% {
+                opacity: 1;
+                transform: translate(0, 0) rotate(0deg);
+            }
+        }
+
+        .binder-open {
+            width: 300px;
+            height: 200px;
+            position: relative;
+            transform: perspective(1000px) rotateY(-25deg) rotateX(5deg);
+        }
+
+        .binder-spine {
+            width: 15px;
+            height: 200px;
+            background: linear-gradient(180deg, #172554 0%, #1e3a8a 100%);
+            position: absolute;
+            left: 0;
+            top: 0;
+            border-radius: 4px 0 0 4px;
+            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .binder-left-page {
+            width: 140px;
+            height: 200px;
+            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+            position: absolute;
+            left: 15px;
+            top: 0;
+            border-radius: 0 4px 4px 0;
+            box-shadow:
+                inset 2px 2px 10px rgba(255, 255, 255, 0.1),
+                4px 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .binder-right-page {
+            width: 140px;
+            height: 200px;
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            position: absolute;
+            left: 160px;
+            top: 0;
+            border-radius: 4px;
+            box-shadow:
+                inset -2px 2px 10px rgba(0, 0, 0, 0.05),
+                4px 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Letter Cards Container */
+        .letter-cards-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            gap: 8px;
+            flex-wrap: nowrap;
+        }
+
+        /* Letter Card Base Style */
+        .letter-card {
+            width: 50px;
+            height: 70px;
+            background: linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%);
+            border-radius: 6px;
+            border: 3px solid #dc2626;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            font-weight: 800;
+            color: #1e3a8a;
+            opacity: 0;
+            position: relative;
+        }
+
+        /* Individual Letter Card Animations - Spilling from corner binder */
+        .card-letter-1 { animation: spillCard 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.8s forwards; }
+        .card-letter-2 { animation: spillCard 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.9s forwards; }
+        .card-letter-3 { animation: spillCard 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 1.0s forwards; }
+        .card-letter-4 { animation: spillCard 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 1.1s forwards; }
+        .card-letter-5 { animation: spillCard 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 1.2s forwards; }
+        .card-letter-6 { animation: spillCard 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 1.3s forwards; }
+        .card-letter-7 { animation: spillCard 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 1.4s forwards; }
+        .card-letter-8 { animation: spillCard 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 1.5s forwards; }
+        .card-letter-9 { animation: spillCard 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 1.6s forwards; }
+        .card-letter-10 { animation: spillCard 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 1.7s forwards; }
+        .card-letter-11 { animation: spillCard 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 1.8s forwards; }
+        .card-letter-12 { animation: spillCard 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 1.9s forwards; }
+        .card-letter-13 { animation: spillCard 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 2.0s forwards; }
+        .card-letter-14 { animation: spillCard 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 2.1s forwards; }
+
+        @keyframes spillCard {
+            0% {
+                opacity: 0;
+                transform: translate(-400px, -200px) rotate(-45deg) scale(0.3);
+            }
+            60% {
+                opacity: 1;
+                transform: translate(0, -30px) rotate(8deg) scale(1.1);
+            }
+            100% {
+                opacity: 1;
+                transform: translate(0, 0) rotate(0deg) scale(1);
+            }
+        }
+
+        /* Tagline Animation */
+        .hero-tagline-animated {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            opacity: 0;
+            animation: fadeInTagline 0.6s ease-out 2.7s forwards;
+        }
+
+        .hero-tagline-animated p {
+            font-size: 1.3em;
+            color: rgba(255, 255, 255, 0.95);
+            margin: 0;
+            font-weight: 600;
+            text-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+            letter-spacing: 0.5px;
+        }
+
+        @keyframes fadeInTagline {
+            0% {
+                opacity: 0;
+                transform: translateX(-50%) translateY(20px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .letter-cards-container {
+                gap: 6px;
+            }
+
+            .letter-card {
+                width: 42px;
+                height: 60px;
+                font-size: 1.6em;
+            }
+
+            .hero-tagline-animated p {
+                font-size: 1.1em;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hero-animation-container {
+                height: 350px;
+            }
+
+            .binder-corner {
+                top: 10px;
+                left: 10px;
+                transform: scale(0.8);
+            }
+
+            .letter-cards-container {
+                gap: 4px;
+                flex-wrap: wrap;
+                max-width: 90%;
+            }
+
+            .letter-card {
+                width: 38px;
+                height: 54px;
+                font-size: 1.4em;
+            }
+
+            .hero-tagline-animated {
+                bottom: 30px;
+            }
+
+            .hero-tagline-animated p {
+                font-size: 1em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero-animation-container {
+                height: 300px;
+            }
+
+            .binder-corner {
+                top: 5px;
+                left: 5px;
+                transform: scale(0.6);
+            }
+
+            .letter-card {
+                width: 32px;
+                height: 46px;
+                font-size: 1.2em;
+                border-width: 2px;
+            }
+
+            .hero-tagline-animated {
+                bottom: 20px;
+            }
+
+            .hero-tagline-animated p {
+                font-size: 0.9em;
+            }
+        }
+
+        /* Reduced Motion Fallback */
+        @media (prefers-reduced-motion: reduce) {
+            .hero-animation-container {
+                height: 300px;
+            }
+
+            .binder-corner,
+            .letter-card,
+            .hero-tagline-animated {
+                animation: none !important;
+            }
+
+            .binder-corner {
+                opacity: 1;
+            }
+
+            .letter-card {
+                opacity: 1;
+            }
+
+            .hero-tagline-animated {
+                opacity: 1;
+            }
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
+            pointer-events: none;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.5);
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .stat-label {
+            font-size: 0.85em;
+            font-weight: 700;
+            color: rgba(255,255,255,0.9);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-icon {
+            font-size: 2.5em;
+            opacity: 0.3;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+        }
+
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .stat-change {
+            font-size: 0.9em;
+            font-weight: 600;
+            color: rgba(255,255,255,0.85);
+        }
+
+        .stat-change.positive {
+            color: #a7f3d0;
+        }
+
+        .stat-change.negative {
+            color: #fecaca;
+        }
+
+        .stat-change.neutral {
+            color: rgba(255,255,255,0.7);
+        }
+
+        /* Content Card */
+        .content-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.9) 100%);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 24px;
+        }
+
+        .content-card h2 {
+            color: #1a1d23;
+            margin-bottom: 24px;
+            font-size: 1.5em;
+            font-weight: 700;
+        }
+
+        /* Forms */
+        .form-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #333;
+            font-size: 0.9em;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #3a7bd5;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+            padding: 6px 12px;
+            font-size: 0.85em;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        /* File Upload */
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-label {
+            background: #2196f3;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: inline-block;
+            transition: background 0.3s;
+        }
+
+        .file-input-label:hover {
+            background: #1976d2;
+        }
+
+        .selected-files {
+            margin-top: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+            font-size: 0.9em;
+        }
+
+        .upload-progress {
+            margin-top: 15px;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+            display: none;
+        }
+
+        /* Imported Sets Display */
+        .year-group {
+            margin-bottom: 20px;
+        }
+
+        .year-header {
+            font-weight: 700;
+            font-size: 1.1em;
+            color: #3a7bd5;
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            background: linear-gradient(135deg, rgba(58, 123, 213, 0.1) 0%, rgba(0, 210, 255, 0.1) 100%);
+            border-radius: 8px;
+            display: inline-block;
+        }
+
+        .sets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+            margin-left: 20px;
+        }
+
+        .set-card {
+            background: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border-left: 4px solid #3a7bd5;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+        }
+
+        .set-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .set-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+            font-size: 0.95em;
+        }
+
+        .set-count {
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        .no-sets-message {
+            padding: 40px;
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            background: rgba(255,255,255,0.5);
+            border-radius: 8px;
+        }
+
+        /* Table */
+        .cards-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 8px;
+            overflow-x: auto;
+            display: block;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .cards-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .cards-table th {
+            background: linear-gradient(135deg, #3a7bd5 0%, #00d2ff 100%);
+            color: white;
+            padding: 8px 6px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.7em;
+            white-space: nowrap;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .cards-table td {
+            padding: 6px 6px;
+            border-bottom: 1px solid #eee;
+            font-size: 0.75em;
+            white-space: nowrap;
+        }
+
+        .cards-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .cards-table td.player-name {
+            font-weight: 600;
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .cards-table td.set-name {
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .cards-table td.notes-cell {
+            max-width: 100px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .btn-danger-sm {
+            background: #dc3545;
+            color: white;
+            padding: 4px 8px;
+            font-size: 0.7em;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .btn-danger-sm:hover {
+            background: #c82333;
+        }
+
+        .btn-primary-sm {
+            background: #3a7bd5;
+            color: white;
+            padding: 4px 8px;
+            font-size: 0.7em;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .btn-primary-sm:hover {
+            background: #2563eb;
+        }
+
+        /* Messages */
+        .message {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+            font-size: 1.2em;
+        }
+
+        /* Variety Selector */
+        .variety-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .variety-option {
+            padding: 12px;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.3s;
+            font-size: 0.9em;
+        }
+
+        .variety-option:hover {
+            border-color: #3a7bd5;
+            transform: translateY(-2px);
+        }
+
+        .variety-option.selected {
+            background: #3a7bd5;
+            color: white;
+            border-color: #3a7bd5;
+        }
+
+        .variety-label {
+            font-weight: 600;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .parallel-label {
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        .variety-option.selected .parallel-label {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        /* Footer */
+        .footer {
+            background: linear-gradient(135deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.7) 100%);
+            backdrop-filter: blur(10px);
+            text-align: center;
+            padding: 40px 20px;
+            color: white;
+            margin-top: 60px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .footer-brand {
+            font-size: 1.4em;
+            font-weight: 700;
+            margin-bottom: 12px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .footer-text {
+            font-size: 1em;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+
+
+        /* Search Bar */
+        .search-container {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .search-wrapper {
+            position: relative;
+            max-width: 500px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 45px 12px 45px;
+            border: 2px solid #ddd;
+            border-radius: 25px;
+            font-size: 1em;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #3a7bd5;
+            box-shadow: 0 0 0 3px rgba(58, 123, 213, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+            font-size: 1.1em;
+        }
+
+        .clear-search {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            font-size: 1.2em;
+            padding: 5px;
+            display: none;
+        }
+
+        .clear-search:hover {
+            color: #dc3545;
+        }
+
+        .search-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid #3a7bd5;
+            border-top: none;
+            border-radius: 0 0 12px 12px;
+            max-height: 250px;
+            overflow-y: auto;
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        }
+
+        .suggestion-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 0.9em;
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-item:hover {
+            background: #f0f7ff;
+        }
+
+        .suggestion-item .player-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .suggestion-item .card-count {
+            font-size: 0.85em;
+            color: #666;
+            margin-left: 8px;
+        }
+
+        .collection-stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .collection-stat-badge {
+            background: linear-gradient(135deg, #3a7bd5 0%, #00d2ff 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        /* Buy Me a Coffee */
+        .bmc-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #FFDD00;
+            color: #000000;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95em;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(255, 221, 0, 0.3);
+        }
+
+        .bmc-button:hover {
+            background: #FFED4E;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(255, 221, 0, 0.4);
+        }
+
+        .bmc-button img {
+            height: 20px;
+            width: 20px;
+        }
+
+        .bmc-footer {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 221, 0, 0.2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.85em;
+            transition: all 0.3s;
+            margin-top: 15px;
+        }
+
+        .bmc-footer:hover {
+            background: rgba(255, 221, 0, 0.3);
+            transform: scale(1.05);
+        }
+
+        .support-section {
+            text-align: center;
+            margin-top: 48px;
+            padding: 40px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.9) 100%);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 2px solid rgba(255, 193, 7, 0.3);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .support-section h3 {
+            color: #1a1d23;
+            margin-bottom: 12px;
+            font-size: 1.5em;
+            font-weight: 700;
+        }
+
+        .support-section p {
+            color: #6b7280;
+            margin-bottom: 24px;
+            font-size: 1.05em;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            animation: fadeIn 0.3s;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 1200px;
+            max-height: 90vh;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            animation: slideUp 0.3s;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            padding: 25px 30px;
+            background: linear-gradient(135deg, #3a7bd5 0%, #00d2ff 100%);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.5em;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            font-size: 1.5em;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            padding: 30px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .modal-footer {
+            padding: 20px 30px;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        /* Card Selection Grid */
+        .selection-counter {
+            background: linear-gradient(135deg, #3a7bd5 0%, #00d2ff 100%);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: 700;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(58, 123, 213, 0.3);
+        }
+
+        .selection-counter .count {
+            font-size: 1.5em;
+        }
+
+        .quick-select-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn-quick {
+            padding: 8px 16px;
+            border: 2px solid #3a7bd5;
+            background: white;
+            color: #3a7bd5;
+            border-radius: 8px;
+            font-size: 0.9em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-quick:hover {
+            background: #3a7bd5;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .card-item {
+            background: #f8f9fa;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .card-item:hover {
+            border-color: #3a7bd5;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(58, 123, 213, 0.2);
+        }
+
+        .card-item.selected {
+            border-color: #3a7bd5;
+            background: linear-gradient(135deg, rgba(58, 123, 213, 0.1) 0%, rgba(0, 210, 255, 0.1) 100%);
+        }
+
+        .card-item input[type="checkbox"] {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 22px;
+            height: 22px;
+        }
+
+        .card-item-header {
+            font-weight: 700;
+            color: #333;
+            font-size: 1.05em;
+            margin-bottom: 8px;
+            padding-right: 35px;
+        }
+
+        .card-item-details {
+            font-size: 0.85em;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .card-item-value {
+            font-weight: 600;
+            color: #28a745;
+            margin-top: 8px;
+            font-size: 0.95em;
+        }
+
+        /* Price Results Table */
+        .price-results {
+            margin-top: 20px;
+        }
+
+        .progress-bar {
+            background: #f0f0f0;
+            border-radius: 20px;
+            padding: 15px 20px;
+            margin: 20px 0;
+            text-align: center;
+            font-weight: 600;
+            color: #3a7bd5;
+        }
+
+        .progress-bar .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f0f0f0;
+            border-top: 3px solid #3a7bd5;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .price-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .price-table th {
+            background: linear-gradient(135deg, #3a7bd5 0%, #00d2ff 100%);
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .price-table td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            font-size: 0.9em;
+        }
+
+        .price-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .ebay-link {
+            color: #3a7bd5;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .ebay-link:hover {
+            text-decoration: underline;
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, rgba(58, 123, 213, 0.1) 0%, rgba(0, 210, 255, 0.1) 100%);
+            border-left: 4px solid #3a7bd5;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .info-box h3 {
+            color: #3a7bd5;
+            margin: 0 0 10px 0;
+            font-size: 1.1em;
+        }
+
+        .info-box ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        .info-box li {
+            margin: 5px 0;
+            color: #555;
+            font-size: 0.95em;
+        }
+
+        .btn-disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        /* Tab Styles */
+        .tab-button {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            color: #666;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .tab-button:hover {
+            color: #3a7bd5;
+            background: rgba(58, 123, 213, 0.05);
+        }
+
+        .tab-button.active {
+            color: #3a7bd5;
+            border-bottom-color: #3a7bd5;
+            background: rgba(58, 123, 213, 0.1);
+        }
+
+        .import-tab {
+            display: none;
+        }
+
+        .import-tab.active {
+            display: block;
+        }
+
+        .admin-tab {
+            display: none;
+        }
+
+        .admin-tab.active {
+            display: block;
+        }
+
+        /* Import Preview Styles */
+        .import-preview-card {
+            background: #f9fafb;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .import-stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .import-stat {
+            flex: 1;
+            min-width: 150px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .import-stat-label {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .import-stat-value {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: #1e3a8a;
+        }
+
+        .import-errors {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .import-errors h4 {
+            color: #dc2626;
+            margin: 0 0 10px 0;
+        }
+
+        .import-errors ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .import-errors li {
+            color: #991b1b;
+            margin: 5px 0;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        .empty-state-text {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        .empty-state-subtext {
+            font-size: 0.95em;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <img src="BaseballBinder_thumbnail.png" alt="BaseballBinder Logo" class="brand-logo">
+                <span class="brand-text">BaseballBinder</span>
+            </div>
+            <ul class="nav-links">
+                <li class="nav-link active" onclick="showPage('home')">Dashboard</li>
+                <li class="nav-link" onclick="showPage('import')">Import</li>
+                <li class="nav-link" onclick="showPage('add')">Add Card</li>
+                <li class="nav-link" onclick="showPage('collection')">Collection</li>
+                <li class="nav-link" onclick="showPage('pricing')">Price Tracking</li>
+                <li class="nav-link" onclick="showPage('suggestions')">Suggestions</li>
+                <li class="nav-link" onclick="showPage('admin')">Admin</li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div id="messageContainer"></div>
+
+        <!-- HOME PAGE -->
+        <div id="page-home" class="page active">
+            <!-- Animated Hero Banner -->
+            <div class="hero-animation-container">
+                <div class="binder-corner">
+                    <div class="binder-open">
+                        <div class="binder-spine"></div>
+                        <div class="binder-left-page"></div>
+                        <div class="binder-right-page"></div>
+                    </div>
+                </div>
+
+                <div class="letter-cards-container">
+                    <div class="letter-card card-letter-1" data-letter="B">B</div>
+                    <div class="letter-card card-letter-2" data-letter="a">a</div>
+                    <div class="letter-card card-letter-3" data-letter="s">s</div>
+                    <div class="letter-card card-letter-4" data-letter="e">e</div>
+                    <div class="letter-card card-letter-5" data-letter="b">b</div>
+                    <div class="letter-card card-letter-6" data-letter="a">a</div>
+                    <div class="letter-card card-letter-7" data-letter="l">l</div>
+                    <div class="letter-card card-letter-8" data-letter="l">l</div>
+                    <div class="letter-card card-letter-9" data-letter="B">B</div>
+                    <div class="letter-card card-letter-10" data-letter="i">i</div>
+                    <div class="letter-card card-letter-11" data-letter="n">n</div>
+                    <div class="letter-card card-letter-12" data-letter="d">d</div>
+                    <div class="letter-card card-letter-13" data-letter="e">e</div>
+                    <div class="letter-card card-letter-14" data-letter="r">r</div>
+                </div>
+
+                <div class="hero-tagline-animated">
+                    <p>Your Digital Baseball Card Collection Manager</p>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-label">Total Cards</span>
+                        <span class="stat-icon">🎴</span>
+                    </div>
+                    <div class="stat-value" id="homeTotalCards">0</div>
+                    <div class="stat-change neutral">Your entire collection</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-label">Total Invested</span>
+                        <span class="stat-icon">💵</span>
+                    </div>
+                    <div class="stat-value" id="homeTotalInvested">$0</div>
+                    <div class="stat-change neutral">Amount spent on cards</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-label">Current Value</span>
+                        <span class="stat-icon">💰</span>
+                    </div>
+                    <div class="stat-value" id="homeTotalValue">$0</div>
+                    <div class="stat-change neutral">Current market value</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-label">Profit/Loss</span>
+                        <span class="stat-icon">📈</span>
+                    </div>
+                    <div class="stat-value" id="homeProfitLoss">$0</div>
+                    <div class="stat-change" id="homeProfitLossChange">—</div>
+                </div>
+            </div>
+
+            <!-- Fun Statistics -->
+            <div class="content-card" style="margin-top: 30px;">
+                <h3 style="margin-top: 0; color: #1e3a8a;">📊 Collection Insights</h3>
+                <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                    <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                        <div class="stat-header">
+                            <span class="stat-label" style="color: white;">Most Collected Player</span>
+                            <span class="stat-icon">⭐</span>
+                        </div>
+                        <div class="stat-value" id="topPlayer" style="color: white; font-size: 1.3em;">—</div>
+                        <div class="stat-change" id="topPlayerCount" style="color: rgba(255,255,255,0.8);">0 cards</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">
+                        <div class="stat-header">
+                            <span class="stat-label" style="color: white;">Most Collected Team</span>
+                            <span class="stat-icon">🏆</span>
+                        </div>
+                        <div class="stat-value" id="topTeam" style="color: white; font-size: 1.3em;">—</div>
+                        <div class="stat-change" id="topTeamCount" style="color: rgba(255,255,255,0.8);">0 cards</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white;">
+                        <div class="stat-header">
+                            <span class="stat-label" style="color: white;">Most Collected Set</span>
+                            <span class="stat-icon">📚</span>
+                        </div>
+                        <div class="stat-value" id="topSet" style="color: white; font-size: 1.3em;">—</div>
+                        <div class="stat-change" id="topSetCount" style="color: rgba(255,255,255,0.8);">0 cards</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white;">
+                        <div class="stat-header">
+                            <span class="stat-label" style="color: white;">Most Valuable Card</span>
+                            <span class="stat-icon">💎</span>
+                        </div>
+                        <div class="stat-value" id="mostValuableCard" style="color: white; font-size: 1.3em;">—</div>
+                        <div class="stat-change" id="mostValuableValue" style="color: rgba(255,255,255,0.8);">$0</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white;">
+                        <div class="stat-header">
+                            <span class="stat-label" style="color: white;">Average Card Value</span>
+                            <span class="stat-icon">📊</span>
+                        </div>
+                        <div class="stat-value" id="avgCardValue" style="color: white; font-size: 1.3em;">$0</div>
+                        <div class="stat-change" style="color: rgba(255,255,255,0.8);">Per card</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%); color: white;">
+                        <div class="stat-header">
+                            <span class="stat-label" style="color: white;">Total Autographs</span>
+                            <span class="stat-icon">✍️</span>
+                        </div>
+                        <div class="stat-value" id="totalAutographs" style="color: white; font-size: 1.3em;">0</div>
+                        <div class="stat-change" id="autographPercent" style="color: rgba(255,255,255,0.8);">0% of collection</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Support Section -->
+            <div class="support-section">
+                <h3>☕ Enjoying BaseballBinder?</h3>
+                <p>Support the development and help keep BaseballBinder free for everyone!</p>
+                <a href="https://buymeacoffee.com/baseballbinder" target="_blank" class="bmc-button">
+                    ☕ Buy Me a Coffee
+                </a>
+            </div>
+        </div>
+
+        <!-- IMPORT CHECKLISTS PAGE -->
+        <div id="page-import" class="page">
+            <div class="content-card">
+                <h2>📦 Import Data</h2>
+
+                <!-- Tab Navigation -->
+                <div style="display: flex; gap: 10px; margin-bottom: 30px; border-bottom: 2px solid #e5e7eb;">
+                    <button class="tab-button active" onclick="switchImportTab('checklists')" id="tab-checklists">
+                        📚 Import Checklists
+                    </button>
+                    <button class="tab-button" onclick="switchImportTab('cards')" id="tab-cards">
+                        🎴 Import Cards
+                    </button>
+                </div>
+
+                <!-- CHECKLISTS TAB -->
+                <div id="import-tab-checklists" class="import-tab active">
+                    <p style="margin-bottom: 20px; color: #666;">Checklists are automatically imported from the <strong>/checklists</strong> folder. Organize CSV files by year in subfolders.</p>
+
+                    <div style="margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap;">
+                        <button class="btn btn-primary" onclick="rescanChecklists()">
+                            🔄 Rescan Folder
+                        </button>
+                        <button class="btn btn-success" onclick="openRequestChecklistModal()">
+                            📝 Request a Checklist
+                        </button>
+                    </div>
+
+                    <div class="info-box" style="margin-bottom: 30px;">
+                        <h3>📋 How to Add Checklists</h3>
+                        <ul>
+                            <li>Create year folders inside <code>/checklists</code> (e.g., <code>/checklists/2024/</code>)</li>
+                            <li>Add CSV files named after the set (e.g., <code>Topps-Chrome.csv</code>)</li>
+                            <li>Click "Rescan Folder" to import new files</li>
+                            <li>Already imported files are automatically skipped</li>
+                        </ul>
+                        <p style="margin-top: 10px;"><strong>Don't see your set?</strong> Click "Request a Checklist" and we'll add it!</p>
+                    </div>
+
+                    <div id="checklistSummaryTable" class="loading">Loading checklists...</div>
+                </div>
+
+                <!-- CARDS TAB -->
+                <div id="import-tab-cards" class="import-tab">
+                    <p style="margin-bottom: 20px; color: #666;">Import your existing card collection from a CSV file. Use this to quickly add multiple cards at once.</p>
+
+                    <div style="margin-bottom: 20px;">
+                        <label class="btn btn-primary" style="cursor: pointer;">
+                            📁 Choose CSV File
+                            <input type="file" id="cardCsvFile" accept=".csv" style="display: none;" onchange="handleCardCsvUpload(event)">
+                        </label>
+                    </div>
+
+                    <div class="info-box" style="margin-bottom: 30px;">
+                        <h3>📋 CSV Format Guide</h3>
+                        <p style="margin-bottom: 10px;">Your CSV file should include the following columns in this order:</p>
+                        <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                            <thead>
+                                <tr style="background: #f3f4f6;">
+                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Excel Column</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Field Name</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Required</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Example</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>A</strong></td><td style="padding: 8px; border: 1px solid #ddd;"><strong>Set Name</strong></td><td style="padding: 8px; border: 1px solid #ddd;">✅ Yes</td><td style="padding: 8px; border: 1px solid #ddd;">Topps Chrome</td></tr>
+                                <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>B</strong></td><td style="padding: 8px; border: 1px solid #ddd;"><strong>Card Number</strong></td><td style="padding: 8px; border: 1px solid #ddd;">✅ Yes</td><td style="padding: 8px; border: 1px solid #ddd;">27</td></tr>
+                                <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>C</strong></td><td style="padding: 8px; border: 1px solid #ddd;"><strong>Player</strong></td><td style="padding: 8px; border: 1px solid #ddd;">✅ Yes</td><td style="padding: 8px; border: 1px solid #ddd;">Mike Trout</td></tr>
+                                <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>D</strong></td><td style="padding: 8px; border: 1px solid #ddd;"><strong>Team</strong></td><td style="padding: 8px; border: 1px solid #ddd;">Optional</td><td style="padding: 8px; border: 1px solid #ddd;">Angels</td></tr>
+                                <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>E</strong></td><td style="padding: 8px; border: 1px solid #ddd;"><strong>Year</strong></td><td style="padding: 8px; border: 1px solid #ddd;">Optional</td><td style="padding: 8px; border: 1px solid #ddd;">2024</td></tr>
+                                <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>F</strong></td><td style="padding: 8px; border: 1px solid #ddd;"><strong>Variety</strong></td><td style="padding: 8px; border: 1px solid #ddd;">Optional</td><td style="padding: 8px; border: 1px solid #ddd;">Base</td></tr>
+                                <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>G</strong></td><td style="padding: 8px; border: 1px solid #ddd;"><strong>Parallel</strong></td><td style="padding: 8px; border: 1px solid #ddd;">Optional</td><td style="padding: 8px; border: 1px solid #ddd;">Refractor</td></tr>
+                                <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>H</strong></td><td style="padding: 8px; border: 1px solid #ddd;"><strong>Autograph</strong></td><td style="padding: 8px; border: 1px solid #ddd;">Optional</td><td style="padding: 8px; border: 1px solid #ddd;">Yes/No</td></tr>
+                                <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>I</strong></td><td style="padding: 8px; border: 1px solid #ddd;"><strong>Numbered</strong></td><td style="padding: 8px; border: 1px solid #ddd;">Optional</td><td style="padding: 8px; border: 1px solid #ddd;">/150</td></tr>
+                                <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>J</strong></td><td style="padding: 8px; border: 1px solid #ddd;"><strong>Graded</strong></td><td style="padding: 8px; border: 1px solid #ddd;">Optional</td><td style="padding: 8px; border: 1px solid #ddd;">PSA 10</td></tr>
+                                <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>K</strong></td><td style="padding: 8px; border: 1px solid #ddd;"><strong>Price Paid</strong></td><td style="padding: 8px; border: 1px solid #ddd;">Optional</td><td style="padding: 8px; border: 1px solid #ddd;">25.00</td></tr>
+                                <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>L</strong></td><td style="padding: 8px; border: 1px solid #ddd;"><strong>Current Value</strong></td><td style="padding: 8px; border: 1px solid #ddd;">Optional</td><td style="padding: 8px; border: 1px solid #ddd;">30.00</td></tr>
+                                <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>M</strong></td><td style="padding: 8px; border: 1px solid #ddd;"><strong>Location</strong></td><td style="padding: 8px; border: 1px solid #ddd;">Optional</td><td style="padding: 8px; border: 1px solid #ddd;">Binder 1</td></tr>
+                                <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>N</strong></td><td style="padding: 8px; border: 1px solid #ddd;"><strong>Quantity</strong></td><td style="padding: 8px; border: 1px solid #ddd;">Optional</td><td style="padding: 8px; border: 1px solid #ddd;">1</td></tr>
+                                <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>O</strong></td><td style="padding: 8px; border: 1px solid #ddd;"><strong>Notes</strong></td><td style="padding: 8px; border: 1px solid #ddd;">Optional</td><td style="padding: 8px; border: 1px solid #ddd;">Great condition</td></tr>
+                            </tbody>
+                        </table>
+                        <p style="margin-top: 15px; color: #dc2626; font-weight: 600;">⚠️ Important: Include a header row with column names in your CSV file!</p>
+                    </div>
+
+                    <div id="cardImportPreview"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- REQUEST CHECKLIST MODAL -->
+        <div id="requestChecklistModal" class="modal">
+            <div class="modal-content" style="max-width: 600px;">
+                <div class="modal-header">
+                    <h2>📝 Request a Checklist</h2>
+                    <button class="modal-close" onclick="closeRequestChecklistModal()">×</button>
+                </div>
+                <div class="modal-body">
+                    <p style="margin-bottom: 20px; color: #666;">
+                        Can't find the checklist you need? Submit a request and we'll add it to the system!
+                    </p>
+
+                    <form id="requestChecklistForm" onsubmit="submitChecklistRequest(event); return false;">
+                        <div class="form-group">
+                            <label for="req_set_name">Set Name *</label>
+                            <input type="text" id="req_set_name" required placeholder="e.g., Topps Chrome">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="req_year">Year *</label>
+                            <input type="text" id="req_year" required placeholder="e.g., 2024">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="req_manufacturer">Manufacturer</label>
+                            <select id="req_manufacturer">
+                                <option value="">Select manufacturer...</option>
+                                <option value="Topps">Topps</option>
+                                <option value="Bowman">Bowman</option>
+                                <option value="Panini">Panini</option>
+                                <option value="Upper Deck">Upper Deck</option>
+                                <option value="Leaf">Leaf</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="req_email">Your Email (optional)</label>
+                            <input type="email" id="req_email" placeholder="Get notified when added">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="req_notes">Additional Notes</label>
+                            <textarea id="req_notes" rows="3" placeholder="Any additional information about the set..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="req_priority">Priority</label>
+                            <select id="req_priority">
+                                <option value="low">Low - I can wait</option>
+                                <option value="normal" selected>Normal</option>
+                                <option value="high">High - I need this soon</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeRequestChecklistModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" form="requestChecklistForm">Submit Request</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- EDIT CARD MODAL -->
+        <div id="editCardModal" class="modal">
+            <div class="modal-content" style="max-width: 800px;">
+                <div class="modal-header">
+                    <h2>✏️ Edit Card</h2>
+                    <button class="modal-close" onclick="closeEditCardModal()">×</button>
+                </div>
+                <div class="modal-body">
+                    <form id="editCardForm">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="edit_set_name">Set Name *</label>
+                                <input type="text" id="edit_set_name" required readonly style="background: #f3f4f6;">
+                            </div>
+                            <div class="form-group">
+                                <label for="edit_card_number">Card Number *</label>
+                                <input type="text" id="edit_card_number" required readonly style="background: #f3f4f6;">
+                            </div>
+                            <div class="form-group">
+                                <label for="edit_player">Player *</label>
+                                <input type="text" id="edit_player" required readonly style="background: #f3f4f6;">
+                            </div>
+                            <div class="form-group">
+                                <label for="edit_team">Team</label>
+                                <input type="text" id="edit_team">
+                            </div>
+                            <div class="form-group">
+                                <label for="edit_year">Year</label>
+                                <input type="text" id="edit_year">
+                            </div>
+                            <div class="form-group">
+                                <label for="edit_variety">Variety</label>
+                                <input type="text" id="edit_variety">
+                            </div>
+                            <div class="form-group">
+                                <label for="edit_parallel">Parallel</label>
+                                <input type="text" id="edit_parallel">
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="edit_autograph"> Autograph
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit_numbered">Numbered</label>
+                                <input type="text" id="edit_numbered" placeholder="e.g., /50">
+                            </div>
+                            <div class="form-group">
+                                <label for="edit_graded">Graded</label>
+                                <input type="text" id="edit_graded" placeholder="e.g., PSA 10">
+                            </div>
+                            <div class="form-group">
+                                <label for="edit_price_paid">Price Paid ($)</label>
+                                <input type="number" id="edit_price_paid" step="0.01">
+                            </div>
+                            <div class="form-group">
+                                <label for="edit_current_value">Current Value ($)</label>
+                                <input type="number" id="edit_current_value" step="0.01">
+                            </div>
+                            <div class="form-group">
+                                <label for="edit_location">Location</label>
+                                <input type="text" id="edit_location" placeholder="e.g., Box 1, Binder A">
+                            </div>
+                            <div class="form-group">
+                                <label for="edit_quantity">Quantity</label>
+                                <input type="number" id="edit_quantity" value="1" min="1">
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-top: 15px;">
+                            <label for="edit_notes">Notes</label>
+                            <textarea id="edit_notes" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeEditCardModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" form="editCardForm">💾 Update Card</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- IMPORT PROGRESS MODAL -->
+        <div id="importProgressModal" class="modal">
+            <div class="modal-content" style="max-width: 700px;">
+                <div class="modal-header">
+                    <h2>📤 Importing Cards</h2>
+                </div>
+                <div class="modal-body">
+                    <!-- Progress Bar -->
+                    <div style="margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span id="progressText">Processing...</span>
+                            <span id="progressPercent">0%</span>
+                        </div>
+                        <div style="width: 100%; height: 30px; background: #e5e7eb; border-radius: 8px; overflow: hidden;">
+                            <div id="progressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%); transition: width 0.3s ease;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Status Display -->
+                    <div style="display: flex; gap: 20px; margin-bottom: 20px; justify-content: center;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 2em; color: #16a34a;">✓</div>
+                            <div style="font-size: 1.5em; font-weight: 700;"><span id="successCount">0</span></div>
+                            <div style="color: #666; font-size: 0.9em;">Success</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 2em; color: #dc2626;">✗</div>
+                            <div style="font-size: 1.5em; font-weight: 700;"><span id="errorCount">0</span></div>
+                            <div style="color: #666; font-size: 0.9em;">Errors</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 2em; color: #eab308;">📋</div>
+                            <div style="font-size: 1.5em; font-weight: 700;"><span id="totalCount">0</span></div>
+                            <div style="color: #666; font-size: 0.9em;">Total</div>
+                        </div>
+                    </div>
+
+                    <!-- Current Card Being Processed -->
+                    <div id="currentCardInfo" style="padding: 15px; background: #f9fafb; border-radius: 8px; border-left: 4px solid #3b82f6; margin-bottom: 20px; display: none;">
+                        <strong>Processing:</strong> <span id="currentCardText"></span>
+                    </div>
+
+                    <!-- Error Log -->
+                    <div id="errorLogContainer" style="display: none;">
+                        <h3 style="margin-bottom: 10px; color: #dc2626;">⚠️ Errors</h3>
+                        <div id="errorLog" style="max-height: 200px; overflow-y: auto; padding: 10px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; font-size: 0.9em;"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="closeImportBtn" class="btn btn-primary" onclick="closeImportProgress()" disabled>Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MISSING FIELD MODAL -->
+        <div id="missingFieldModal" class="modal">
+            <div class="modal-content" style="max-width: 600px;">
+                <div class="modal-header">
+                    <h2>⚠️ Missing Required Fields</h2>
+                </div>
+                <div class="modal-body">
+                    <p style="margin-bottom: 20px; color: #666;">This card is missing some information. You can fill in the fields below, add it anyway with missing data, or skip it:</p>
+
+                    <div id="missingFieldCardInfo" style="padding: 15px; background: #f9fafb; border-radius: 8px; margin-bottom: 20px;">
+                        <!-- Card info will be inserted here -->
+                    </div>
+
+                    <form id="missingFieldForm">
+                        <div id="missingFieldInputs">
+                            <!-- Dynamic inputs will be inserted here -->
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer" style="display: flex; gap: 10px; justify-content: space-between;">
+                    <button class="btn btn-secondary" onclick="skipMissingFieldCard()">Skip This Card</button>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn" onclick="addCardAnyways()" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border: none;">⚡ Add Anyways</button>
+                        <button class="btn btn-primary" onclick="submitMissingFields()">✓ Add Card</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ADD CARDS PAGE -->
+        <div id="page-add" class="page">
+            <div class="content-card">
+                <h2>➕ Add New Card to Collection</h2>
+                <form id="cardForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="set_name">Set Name *</label>
+                            <select id="set_name" required>
+                                <option value="">Select a set...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="card_number">Card Number *</label>
+                            <input type="text" id="card_number" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="player">Player *</label>
+                            <input type="text" id="player" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="team">Team</label>
+                            <input type="text" id="team">
+                        </div>
+                        <div class="form-group">
+                            <label for="year">Year</label>
+                            <input type="text" id="year">
+                        </div>
+                        <div class="form-group">
+                            <label for="variety">Variety</label>
+                            <input type="text" id="variety" placeholder="Base, Refractor, etc.">
+                        </div>
+                        <div class="form-group">
+                            <label for="parallel">Parallel</label>
+                            <input type="text" id="parallel" placeholder="Red, Blue, /99, etc.">
+                        </div>
+                        <div class="form-group">
+                            <label for="numbered">Numbered</label>
+                            <input type="text" id="numbered" placeholder="e.g., 25/99">
+                        </div>
+                        <div class="form-group">
+                            <label for="graded">Graded</label>
+                            <input type="text" id="graded" placeholder="PSA 10, Raw, etc.">
+                        </div>
+                        <div class="form-group">
+                            <label for="price_paid">Price Paid ($)</label>
+                            <input type="number" id="price_paid" step="0.01" value="">
+                        </div>
+                        <div class="form-group">
+                            <label for="current_value">Current Value ($)</label>
+                            <input type="number" id="current_value" step="0.01" value="">
+                        </div>
+                        <div class="form-group">
+                            <label for="sold_price">Sold Price ($)</label>
+                            <input type="number" id="sold_price" step="0.01" value="">
+                        </div>
+                        <div class="form-group">
+                            <label for="location">Location</label>
+                            <input type="text" id="location" placeholder="Binder 1, Box A, etc.">
+                        </div>
+                        <div class="form-group">
+                            <label for="quantity">Quantity</label>
+                            <input type="number" id="quantity" value="1" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label class="checkbox-group">
+                                <input type="checkbox" id="autograph">
+                                Autograph
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-top: 15px;">
+                        <label for="notes">Notes</label>
+                        <input type="text" id="notes">
+                    </div>
+                    <div style="margin-top: 20px;">
+                        <button type="submit" class="btn btn-primary">Add Card</button>
+                        <button type="button" class="btn btn-success" onclick="autoFillFromChecklist()" style="margin-left: 10px;">🔍 Auto-Fill from Checklist</button>
+                    </div>
+                    <div id="varietySelector" style="display: none; margin-top: 15px;"></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- VIEW COLLECTION PAGE -->
+        <div id="page-collection" class="page">
+            <div class="content-card">
+                <h2>📚 Your Collection</h2>
+
+                <div class="collection-stats" id="collectionStats" style="display: none;">
+                    <div class="collection-stat-badge">
+                        <span id="filteredCount">0</span> cards shown
+                    </div>
+                    <div class="collection-stat-badge">
+                        <span id="totalCollectionCount">0</span> total cards
+                    </div>
+                </div>
+
+                <div class="search-container">
+                    <div class="search-wrapper">
+                        <span class="search-icon">🔍</span>
+                        <input
+                            type="text"
+                            id="playerSearch"
+                            class="search-input"
+                            placeholder="Search by player name..."
+                            autocomplete="off"
+                        />
+                        <button class="clear-search" id="clearSearch">✕</button>
+                        <div class="search-suggestions" id="searchSuggestions"></div>
+                    </div>
+                </div>
+
+                <div id="cardsContainer" class="loading">Loading cards...</div>
+            </div>
+        </div>
+
+        <!-- PRICE TRACKING PAGE -->
+        <div id="page-pricing" class="page">
+            <div class="content-card">
+                <h2>💰 eBay Price Tracking</h2>
+
+                <div class="info-box">
+                    <h3>📊 How Price Tracking Works</h3>
+                    <ul>
+                        <li><strong>20 Card Limit:</strong> Track up to 20 cards at a time due to eBay API rate limits</li>
+                        <li><strong>Check Weekly:</strong> We recommend checking prices weekly, not daily, to stay within API limits</li>
+                        <li><strong>Flexible Selection:</strong> Change which cards you're tracking anytime</li>
+                        <li><strong>Real eBay Data:</strong> Prices come from actual sold listings and current market prices</li>
+                    </ul>
+                </div>
+
+                <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="openManageTracking()">
+                        📝 Manage Tracked Cards (<span id="trackedCardCount">0</span>/20)
+                    </button>
+                    <button class="btn btn-success" id="checkPricesBtn" onclick="checkTrackedPrices()" disabled>
+                        🔍 Check Tracked Prices
+                    </button>
+                </div>
+
+                <div id="priceResultsContainer"></div>
+            </div>
+        </div>
+
+        <!-- SUGGESTIONS PAGE -->
+        <div id="page-suggestions" class="page">
+            <div class="content-card">
+                <h2>💡 Suggestions & Feedback</h2>
+                <p style="margin-bottom: 30px; color: #666;">Have ideas to improve BaseballBinder? We'd love to hear from you!</p>
+
+                <div class="info-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; color: white; margin-bottom: 30px;">
+                    <h3 style="color: white;">📮 Submit Your Suggestion</h3>
+                    <p style="margin-top: 10px; opacity: 0.95;">Your feedback helps make BaseballBinder better for everyone. Whether it's a feature request, bug report, or general improvement idea, we want to hear it!</p>
+                </div>
+
+                <form id="suggestionForm" style="background: white; padding: 30px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #374151;">
+                            Category <span style="color: #dc2626;">*</span>
+                        </label>
+                        <select id="suggestionCategory" required style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1em;">
+                            <option value="">Select a category...</option>
+                            <option value="feature">✨ Feature Request</option>
+                            <option value="bug">🐛 Bug Report</option>
+                            <option value="improvement">🚀 Improvement</option>
+                            <option value="ui">🎨 UI/UX Design</option>
+                            <option value="other">💬 Other</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #374151;">
+                            Title <span style="color: #dc2626;">*</span>
+                        </label>
+                        <input type="text" id="suggestionTitle" required placeholder="Brief description of your suggestion" style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1em;">
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #374151;">
+                            Description <span style="color: #dc2626;">*</span>
+                        </label>
+                        <textarea id="suggestionDescription" required placeholder="Provide as much detail as possible..." rows="6" style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1em; resize: vertical; font-family: inherit;"></textarea>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #374151;">
+                            Your Email (optional)
+                        </label>
+                        <input type="email" id="suggestionEmail" placeholder="So we can follow up with you" style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1em;">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 14px; font-size: 1.1em;">
+                        📤 Submit Suggestion
+                    </button>
+                </form>
+
+                <div style="margin-top: 40px; padding: 20px; background: #f9fafb; border-radius: 12px; border: 2px dashed #e5e7eb;">
+                    <h3 style="margin-bottom: 15px; color: #1e3a8a;">💭 Popular Feature Requests</h3>
+                    <ul style="margin-left: 20px; line-height: 1.8; color: #666;">
+                        <li>eBay price integration for automatic value tracking</li>
+                        <li>Export collection to PDF or Excel</li>
+                        <li>Card condition grading system</li>
+                        <li>Mobile app for iOS and Android</li>
+                        <li>Social features to share collections with friends</li>
+                    </ul>
+                    <p style="margin-top: 15px; color: #666; font-size: 0.9em;">
+                        ℹ️ These features are being considered based on user feedback!
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ADMIN PAGE -->
+        <div id="page-admin" class="page">
+            <div class="content-card">
+                <h2>⚙️ Admin Panel</h2>
+                <p style="margin-bottom: 20px; color: #666;">Manage checklist requests and user suggestions</p>
+
+                <!-- Admin Tabs -->
+                <div style="display: flex; gap: 10px; margin-bottom: 30px; border-bottom: 2px solid #e5e7eb;">
+                    <button class="tab-button active" id="tab-requests" onclick="switchAdminTab('requests')">
+                        📋 Checklist Requests
+                    </button>
+                    <button class="tab-button" id="tab-suggestions" onclick="switchAdminTab('suggestions')">
+                        💡 Suggestions
+                    </button>
+                </div>
+
+                <!-- Requests Tab -->
+                <div id="admin-tab-requests" class="admin-tab active">
+                    <div style="margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+                        <button class="btn btn-primary" onclick="loadChecklistRequests()">
+                            🔄 Refresh Requests
+                        </button>
+
+                        <select id="statusFilter" onchange="loadChecklistRequests()" style="padding: 10px; border-radius: 8px; border: 2px solid #e5e7eb;">
+                            <option value="">All Statuses</option>
+                            <option value="pending">Pending</option>
+                            <option value="processing">Processing</option>
+                            <option value="completed">Completed</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+
+                        <div style="margin-left: auto; color: #666;">
+                            <strong id="requestCount">0</strong> request(s)
+                        </div>
+                    </div>
+
+                    <div id="requestsTableContainer">
+                        <div class="loading">Loading requests...</div>
+                    </div>
+                </div>
+
+                <!-- Suggestions Tab -->
+                <div id="admin-tab-suggestions" class="admin-tab">
+                    <div style="margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+                        <button class="btn btn-primary" onclick="loadSuggestions()">
+                            🔄 Refresh Suggestions
+                        </button>
+
+                        <select id="suggestionStatusFilter" onchange="loadSuggestions()" style="padding: 10px; border-radius: 8px; border: 2px solid #e5e7eb;">
+                            <option value="">All Statuses</option>
+                            <option value="new">New</option>
+                            <option value="reviewing">Reviewing</option>
+                            <option value="planned">Planned</option>
+                            <option value="completed">Completed</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+
+                        <div style="margin-left: auto; color: #666;">
+                            <strong id="suggestionCount">0</strong> suggestion(s)
+                        </div>
+                    </div>
+
+                    <div id="suggestionsTableContainer">
+                        <div class="loading">Loading suggestions...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MANAGE TRACKING MODAL -->
+    <div id="manageTrackingModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📝 Manage Price Tracking</h2>
+                <button class="modal-close" onclick="closeManageTracking()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="selection-counter">
+                    <span class="count" id="selectedCountDisplay">0</span> of 20 cards selected for tracking
+                </div>
+
+                <div class="quick-select-bar">
+                    <button class="btn-quick" onclick="quickSelectMostValuable()">💎 Most Valuable</button>
+                    <button class="btn-quick" onclick="quickSelectRecentAdditions()">🆕 Recent Additions</button>
+                    <button class="btn-quick" onclick="clearAllSelections()">❌ Clear All</button>
+                </div>
+
+                <div class="search-container">
+                    <div class="search-wrapper">
+                        <span class="search-icon">🔍</span>
+                        <input
+                            type="text"
+                            id="modalSearch"
+                            class="search-input"
+                            placeholder="Search cards..."
+                            autocomplete="off"
+                        />
+                    </div>
+                </div>
+
+                <div id="cardSelectionGrid" class="card-grid">
+                    <div class="loading">Loading cards...</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeManageTracking()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveTrackedSelection()">💾 Save Selection</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000';
+
+        // Global state
+        let allCards = [];
+        let filteredCards = [];
+
+        // Lottie Animation Fallback Handler
+        function initHeroAnimation() {
+            const lottiePlayer = document.getElementById('lottiePlayer');
+            const lottieHero = document.getElementById('lottieHero');
+            const cssHero = document.getElementById('cssHero');
+
+            if (lottiePlayer) {
+                // Set timeout to fallback to CSS animation if Lottie fails to load
+                const fallbackTimer = setTimeout(() => {
+                    console.log('Lottie animation timeout - falling back to CSS animation');
+                    lottieHero.style.display = 'none';
+                    cssHero.style.display = 'block';
+                }, 5000);
+
+                // Listen for Lottie load event
+                lottiePlayer.addEventListener('load', () => {
+                    clearTimeout(fallbackTimer);
+                    console.log('Lottie animation loaded successfully');
+                });
+
+                // Listen for Lottie error event
+                lottiePlayer.addEventListener('error', (e) => {
+                    clearTimeout(fallbackTimer);
+                    console.log('Lottie animation error - falling back to CSS animation:', e);
+                    lottieHero.style.display = 'none';
+                    cssHero.style.display = 'block';
+                });
+
+                // Option to replay animation on click
+                lottieHero.addEventListener('click', () => {
+                    if (lottiePlayer && lottiePlayer.play) {
+                        lottiePlayer.stop();
+                        lottiePlayer.play();
+                    }
+                });
+            }
+        }
+
+        // Initialize
+        initHeroAnimation();
+        loadStats();
+        loadCards();
+        loadImportedSets();
+        loadSetDropdown();
+
+        // Search functionality
+        const searchInput = document.getElementById('playerSearch');
+        const searchSuggestions = document.getElementById('searchSuggestions');
+        const clearSearchBtn = document.getElementById('clearSearch');
+
+        searchInput.addEventListener('input', handleSearchInput);
+        searchInput.addEventListener('focus', handleSearchInput);
+        clearSearchBtn.addEventListener('click', clearSearch);
+
+        // Close suggestions when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.search-wrapper')) {
+                searchSuggestions.style.display = 'none';
+            }
+        });
+
+        function handleSearchInput(e) {
+            const query = e.target.value.trim().toLowerCase();
+
+            if (query.length === 0) {
+                searchSuggestions.style.display = 'none';
+                clearSearchBtn.style.display = 'none';
+                displayCards(allCards);
+                return;
+            }
+
+            clearSearchBtn.style.display = 'block';
+
+            // Get unique players with card counts
+            const playerMap = new Map();
+            allCards.forEach(card => {
+                const player = card.player;
+                if (!playerMap.has(player)) {
+                    playerMap.set(player, []);
+                }
+                playerMap.get(player).push(card);
+            });
+
+            // Filter players that match the query
+            const matchingPlayers = Array.from(playerMap.entries())
+                .filter(([player]) => player.toLowerCase().includes(query))
+                .sort((a, b) => a[0].localeCompare(b[0]))
+                .slice(0, 10); // Limit to 10 suggestions
+
+            if (matchingPlayers.length > 0) {
+                showSuggestions(matchingPlayers);
+            } else {
+                searchSuggestions.style.display = 'none';
+                // Still filter cards for exact matches in other fields
+                filterCards(query);
+            }
+        }
+
+        function showSuggestions(players) {
+            searchSuggestions.innerHTML = '';
+
+            players.forEach(([player, cards]) => {
+                const item = document.createElement('div');
+                item.className = 'suggestion-item';
+                item.innerHTML = `
+                    <span class="player-name">${player}</span>
+                    <span class="card-count">(${cards.length} card${cards.length > 1 ? 's' : ''})</span>
+                `;
+                item.addEventListener('click', () => {
+                    searchInput.value = player;
+                    searchSuggestions.style.display = 'none';
+                    filterCards(player.toLowerCase());
+                });
+                searchSuggestions.appendChild(item);
+            });
+
+            searchSuggestions.style.display = 'block';
+        }
+
+        function filterCards(query) {
+            filteredCards = allCards.filter(card => {
+                return card.player.toLowerCase().includes(query) ||
+                       card.set_name.toLowerCase().includes(query) ||
+                       card.card_number.toLowerCase().includes(query) ||
+                       (card.team && card.team.toLowerCase().includes(query));
+            });
+            displayCards(filteredCards);
+        }
+
+        function clearSearch() {
+            searchInput.value = '';
+            clearSearchBtn.style.display = 'none';
+            searchSuggestions.style.display = 'none';
+            displayCards(allCards);
+        }
+
+        // Page Navigation
+        // Admin authentication
+        const ADMIN_PASSWORD = "1234";
+        let isAdminAuthenticated = false;
+
+        function showPage(pageName) {
+            // Check if page requires admin access
+            const protectedPages = ['admin'];
+            if (protectedPages.includes(pageName) && !isAdminAuthenticated) {
+                const password = prompt('🔐 Admin Access Required\n\nPlease enter the admin password:');
+
+                if (password !== ADMIN_PASSWORD) {
+                    showMessage('Incorrect password. Access denied.', 'error');
+                    return;
+                }
+
+                isAdminAuthenticated = true;
+                showMessage('Admin access granted!', 'success');
+            }
+
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+
+            // Remove active from all nav links
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+
+            // Show selected page
+            document.getElementById(`page-${pageName}`).classList.add('active');
+
+            // Add active to clicked nav link
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
+
+            // Reload data when switching pages
+            if (pageName === 'collection') {
+                loadCards();
+            } else if (pageName === 'home') {
+                loadStats();
+            } else if (pageName === 'import') {
+                loadChecklistSummary();
+            } else if (pageName === 'admin') {
+                loadChecklistRequests();
+            }
+        }
+
+        // Handle CSV file selection display
+        const csvFilesInput = document.getElementById('csv_files');
+        if (csvFilesInput) {
+            csvFilesInput.addEventListener('change', function(e) {
+                const files = e.target.files;
+                const container = document.getElementById('selectedFiles');
+
+                if (files.length > 0) {
+                    container.style.display = 'block';
+                    container.innerHTML = `<strong>Selected files (${files.length}):</strong><br>` +
+                        Array.from(files).map(f => f.name).join('<br>');
+                } else {
+                    container.style.display = 'none';
+                }
+            });
+        }
+
+        // Handle CSV upload
+        const uploadForm = document.getElementById('uploadForm');
+        if (uploadForm) {
+            uploadForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+            const year = document.getElementById('upload_year').value.trim();
+            const files = document.getElementById('csv_files').files;
+
+            if (files.length === 0) {
+                showMessage('Please select at least one CSV file', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('year', year);
+
+            for (let i = 0; i < files.length; i++) {
+                formData.append('files', files[i]);
+            }
+
+            const progressDiv = document.getElementById('uploadProgress');
+            progressDiv.style.display = 'block';
+            progressDiv.innerHTML = '<p>Uploading and processing files...</p>';
+
+            try {
+                const response = await fetch(`${API_URL}/checklist/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    let message = `Successfully uploaded ${result.uploaded} checklist entries from ${result.files_processed} file(s)!`;
+                    if (result.errors.length > 0) {
+                        message += '<br><strong>Errors:</strong><br>' + result.errors.join('<br>');
+                    }
+                    progressDiv.innerHTML = `<p style="color: #28a745;">${message}</p>`;
+                    document.getElementById('uploadForm').reset();
+                    document.getElementById('selectedFiles').style.display = 'none';
+                    showMessage('Checklist uploaded successfully!', 'success');
+
+                    // Refresh imported sets display and dropdown
+                    loadImportedSets();
+                    loadSetDropdown();
+                } else {
+                    progressDiv.innerHTML = `<p style="color: #dc3545;">Error uploading files</p>`;
+                    showMessage('Error uploading files', 'error');
+                }
+            } catch (error) {
+                progressDiv.innerHTML = `<p style="color: #dc3545;">Error connecting to server</p>`;
+                showMessage('Error connecting to server', 'error');
+            }
+            });
+        }
+
+        document.getElementById('cardForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const form = e.target;
+            const editingId = form.dataset.editingId;
+
+            const cardData = {
+                set_name: document.getElementById('set_name').value.trim(),
+                card_number: document.getElementById('card_number').value.trim(),
+                player: document.getElementById('player').value.trim(),
+                team: document.getElementById('team').value.trim() || null,
+                year: document.getElementById('year').value.trim() || null,
+                variety: document.getElementById('variety').value.trim() || null,
+                parallel: document.getElementById('parallel').value.trim() || null,
+                autograph: document.getElementById('autograph').checked,
+                numbered: document.getElementById('numbered').value.trim() || null,
+                graded: document.getElementById('graded').value.trim() || null,
+                price_paid: document.getElementById('price_paid').value ? parseFloat(document.getElementById('price_paid').value) : null,
+                current_value: document.getElementById('current_value').value ? parseFloat(document.getElementById('current_value').value) : null,
+                sold_price: document.getElementById('sold_price').value ? parseFloat(document.getElementById('sold_price').value) : null,
+                location: document.getElementById('location').value.trim() || null,
+                notes: document.getElementById('notes').value.trim() || null,
+                quantity: parseInt(document.getElementById('quantity').value) || 1
+            };
+
+            try {
+                let response;
+                if (editingId) {
+                    // Update existing card
+                    response = await fetch(`${API_URL}/cards/${editingId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(cardData)
+                    });
+                } else {
+                    // Add new card
+                    response = await fetch(`${API_URL}/cards/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(cardData)
+                    });
+                }
+
+                if (response.ok) {
+                    showMessage(editingId ? 'Card updated successfully!' : 'Card added successfully!', 'success');
+                    document.getElementById('cardForm').reset();
+                    document.getElementById('quantity').value = 1;
+                    document.getElementById('varietySelector').style.display = 'none';
+
+                    // Reset form to add mode
+                    delete form.dataset.editingId;
+                    form.querySelector('button[type="submit"]').textContent = 'Add Card';
+
+                    loadStats();
+                    loadCards();
+                } else {
+                    showMessage(editingId ? 'Error updating card' : 'Error adding card', 'error');
+                }
+            } catch (error) {
+                showMessage('Error connecting to server', 'error');
+            }
+        });
+
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_URL}/stats/`);
+                const stats = await response.json();
+
+                // Update home page stats
+                document.getElementById('homeTotalCards').textContent = stats.total_cards;
+                document.getElementById('homeTotalInvested').textContent = `$${stats.total_invested.toFixed(2)}`;
+                document.getElementById('homeTotalValue').textContent = `$${stats.total_value.toFixed(2)}`;
+
+                const profitLoss = stats.profit_loss;
+                const profitLossEl = document.getElementById('homeProfitLoss');
+                const profitLossChangeEl = document.getElementById('homeProfitLossChange');
+
+                profitLossEl.textContent = `${profitLoss >= 0 ? '+' : ''}$${profitLoss.toFixed(2)}`;
+
+                // Update profit/loss styling
+                if (profitLoss > 0) {
+                    profitLossEl.style.color = '#10b981';
+                    profitLossChangeEl.textContent = 'Positive return';
+                    profitLossChangeEl.className = 'stat-change positive';
+                } else if (profitLoss < 0) {
+                    profitLossEl.style.color = '#ef4444';
+                    profitLossChangeEl.textContent = 'Negative return';
+                    profitLossChangeEl.className = 'stat-change negative';
+                } else {
+                    profitLossEl.style.color = '#6b7280';
+                    profitLossChangeEl.textContent = 'Break even';
+                    profitLossChangeEl.className = 'stat-change neutral';
+                }
+
+                // Load fun statistics
+                loadFunStats();
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        async function loadFunStats() {
+            try {
+                const response = await fetch(`${API_URL}/cards/`);
+                const cards = await response.json();
+
+                if (cards.length === 0) return;
+
+                // Most collected player
+                const playerCounts = {};
+                cards.forEach(card => {
+                    playerCounts[card.player] = (playerCounts[card.player] || 0) + (card.quantity || 1);
+                });
+                const topPlayer = Object.entries(playerCounts).sort((a, b) => b[1] - a[1])[0];
+                document.getElementById('topPlayer').textContent = topPlayer[0];
+                document.getElementById('topPlayerCount').textContent = `${topPlayer[1]} card${topPlayer[1] > 1 ? 's' : ''}`;
+
+                // Most collected team
+                const teamCounts = {};
+                cards.forEach(card => {
+                    if (card.team) {
+                        teamCounts[card.team] = (teamCounts[card.team] || 0) + (card.quantity || 1);
+                    }
+                });
+                if (Object.keys(teamCounts).length > 0) {
+                    const topTeam = Object.entries(teamCounts).sort((a, b) => b[1] - a[1])[0];
+                    document.getElementById('topTeam').textContent = topTeam[0];
+                    document.getElementById('topTeamCount').textContent = `${topTeam[1]} card${topTeam[1] > 1 ? 's' : ''}`;
+                }
+
+                // Most collected set
+                const setCounts = {};
+                cards.forEach(card => {
+                    if (card.set_name) {
+                        setCounts[card.set_name] = (setCounts[card.set_name] || 0) + (card.quantity || 1);
+                    }
+                });
+                if (Object.keys(setCounts).length > 0) {
+                    const topSet = Object.entries(setCounts).sort((a, b) => b[1] - a[1])[0];
+                    document.getElementById('topSet').textContent = topSet[0];
+                    document.getElementById('topSetCount').textContent = `${topSet[1]} card${topSet[1] > 1 ? 's' : ''}`;
+                }
+
+                // Most valuable card
+                const mostValuable = cards.reduce((max, card) => {
+                    return (card.current_value || 0) > (max.current_value || 0) ? card : max;
+                }, cards[0]);
+                if (mostValuable.current_value) {
+                    document.getElementById('mostValuableCard').textContent = `${mostValuable.player} #${mostValuable.card_number}`;
+                    document.getElementById('mostValuableValue').textContent = `$${mostValuable.current_value.toFixed(2)}`;
+                }
+
+                // Average card value
+                const totalValue = cards.reduce((sum, card) => sum + (card.current_value || 0), 0);
+                const avgValue = cards.length > 0 ? totalValue / cards.length : 0;
+                document.getElementById('avgCardValue').textContent = `$${avgValue.toFixed(2)}`;
+
+                // Total autographs
+                const autoCount = cards.filter(card => card.autograph).reduce((sum, card) => sum + (card.quantity || 1), 0);
+                const totalCards = cards.reduce((sum, card) => sum + (card.quantity || 1), 0);
+                const autoPercent = totalCards > 0 ? (autoCount / totalCards * 100).toFixed(1) : 0;
+                document.getElementById('totalAutographs').textContent = autoCount;
+                document.getElementById('autographPercent').textContent = `${autoPercent}% of collection`;
+            } catch (error) {
+                console.error('Error loading fun stats:', error);
+            }
+        }
+
+        async function loadCards() {
+            try {
+                const response = await fetch(`${API_URL}/cards/`);
+                allCards = await response.json();
+                filteredCards = allCards;
+                displayCards(allCards);
+            } catch (error) {
+                document.getElementById('cardsContainer').innerHTML = '<p style="color: red;">Error loading cards</p>';
+            }
+        }
+
+        function displayCards(cards) {
+            const container = document.getElementById('cardsContainer');
+            const statsDiv = document.getElementById('collectionStats');
+            const filteredCountSpan = document.getElementById('filteredCount');
+            const totalCountSpan = document.getElementById('totalCollectionCount');
+
+            if (allCards.length === 0) {
+                container.innerHTML = '<p style="text-align: center; padding: 40px; color: #666;">No cards yet. Add your first card!</p>';
+                statsDiv.style.display = 'none';
+                return;
+            }
+
+            // Update stats
+            filteredCountSpan.textContent = cards.length;
+            totalCountSpan.textContent = allCards.length;
+            statsDiv.style.display = 'flex';
+
+            if (cards.length === 0) {
+                container.innerHTML = '<p style="text-align: center; padding: 40px; color: #666;">No cards match your search.</p>';
+                return;
+            }
+
+            let html = '<div class="cards-table"><table><thead><tr>';
+            html += '<th>Set</th><th>Card #</th><th>Player</th><th>Team</th><th>Year</th>';
+            html += '<th>Variety</th><th>Parallel</th><th>Auto</th><th>Numbered</th><th>Graded</th>';
+            html += '<th>Price Paid</th><th>Current Value</th><th>Sold Price</th>';
+            html += '<th>Location</th><th>Qty</th><th>Notes</th><th>Action</th></tr></thead><tbody>';
+
+            cards.forEach(card => {
+                html += `<tr>
+                    <td class="set-name" title="${card.set_name}">${card.set_name}</td>
+                    <td>${card.card_number}</td>
+                    <td class="player-name" title="${card.player}">${card.player}</td>
+                    <td>${card.team || '-'}</td>
+                    <td>${card.year || '-'}</td>
+                    <td>${card.variety || '-'}</td>
+                    <td>${card.parallel || '-'}</td>
+                    <td style="text-align: center;">${card.autograph ? '✓' : '-'}</td>
+                    <td>${card.numbered || '-'}</td>
+                    <td>${card.graded || '-'}</td>
+                    <td>$${card.price_paid ? card.price_paid.toFixed(2) : '0'}</td>
+                    <td>$${card.current_value ? card.current_value.toFixed(2) : '0'}</td>
+                    <td>$${card.sold_price ? card.sold_price.toFixed(2) : '0'}</td>
+                    <td>${card.location || '-'}</td>
+                    <td style="text-align: center;">${card.quantity}</td>
+                    <td class="notes-cell" title="${card.notes || ''}">${card.notes || '-'}</td>
+                    <td>
+                        <button class="btn-primary-sm" onclick="editCard(${card.id})" style="margin-right: 5px;">Edit</button>
+                        <button class="btn-danger-sm" onclick="deleteCard(${card.id})">Del</button>
+                    </td>
+                </tr>`;
+            });
+
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        }
+
+        // Load checklist summary table
+        async function loadChecklistSummary() {
+            try {
+                const response = await fetch(`${API_URL}/checklist/summary`);
+                const checklists = await response.json();
+
+                const container = document.getElementById('checklistSummaryTable');
+
+                if (checklists.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📭</div>
+                            <div class="empty-state-text">No Checklists Imported Yet</div>
+                            <div class="empty-state-subtext">Add CSV files to /checklists folder and click "Rescan Folder"</div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = `
+                    <table class="price-table" style="margin-top: 0;">
+                        <thead>
+                            <tr>
+                                <th>Set Name</th>
+                                <th>Year</th>
+                                <th>Card Count</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                checklists.forEach(checklist => {
+                    html += `
+                        <tr>
+                            <td><strong>${checklist.set_name}</strong></td>
+                            <td>${checklist.year}</td>
+                            <td>${checklist.card_count} cards</td>
+                        </tr>
+                    `;
+                });
+
+                html += '</tbody></table>';
+                container.innerHTML = html;
+
+            } catch (error) {
+                document.getElementById('checklistSummaryTable').innerHTML = '<p style="color: red;">Error loading checklists</p>';
+                console.error('Error:', error);
+            }
+        }
+
+        // Rescan checklists folder
+        async function rescanChecklists() {
+            try {
+                const btn = event.target;
+                btn.disabled = true;
+                btn.textContent = '🔄 Scanning...';
+
+                const response = await fetch(`${API_URL}/checklist/rescan`, {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showMessage(result.message, 'success');
+                    loadChecklistSummary();
+                    loadSetDropdown();
+                } else {
+                    showMessage('Error scanning folder', 'error');
+                }
+
+                btn.disabled = false;
+                btn.textContent = '🔄 Rescan Folder';
+
+            } catch (error) {
+                showMessage('Error connecting to server', 'error');
+                console.error('Error:', error);
+            }
+        }
+
+        // Request checklist modal functions
+        function openRequestChecklistModal() {
+            document.getElementById('requestChecklistModal').classList.add('active');
+            // Clear form
+            document.getElementById('requestChecklistForm').reset();
+        }
+
+        function closeRequestChecklistModal() {
+            document.getElementById('requestChecklistModal').classList.remove('active');
+        }
+
+        async function submitChecklistRequest(event) {
+            if (event) {
+                event.preventDefault();
+            }
+
+            const setName = document.getElementById('req_set_name').value.trim();
+            const year = document.getElementById('req_year').value.trim();
+            const manufacturer = document.getElementById('req_manufacturer').value;
+            const email = document.getElementById('req_email').value.trim();
+            const notes = document.getElementById('req_notes').value.trim();
+            const priority = document.getElementById('req_priority').value;
+
+            if (!setName || !year) {
+                showMessage('Please fill in Set Name and Year', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/checklist/request`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        set_name: setName,
+                        year: year,
+                        manufacturer: manufacturer || null,
+                        email: email || null,
+                        notes: notes || null,
+                        priority: priority
+                    })
+                });
+
+                if (response.ok) {
+                    showMessage('Request submitted successfully! We\'ll add this checklist soon.', 'success');
+                    closeRequestChecklistModal();
+                    document.getElementById('requestChecklistForm').reset();
+                } else {
+                    const errorData = await response.json();
+                    showMessage(`Error: ${errorData.detail || 'Could not submit request'}`, 'error');
+                }
+
+            } catch (error) {
+                showMessage('Error connecting to server', 'error');
+                console.error('Error:', error);
+            }
+        }
+
+        // ==============================
+        // IMPORT TAB SWITCHING
+        // ==============================
+
+        function switchImportTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.import-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Deactivate all tab buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(`import-tab-${tabName}`).classList.add('active');
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+        }
+
+        // ==============================
+        // ADMIN TAB SWITCHING
+        // ==============================
+
+        function switchAdminTab(tabName) {
+            // Hide all admin tabs
+            document.querySelectorAll('.admin-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Deactivate all admin tab buttons
+            document.getElementById('tab-requests').classList.remove('active');
+            document.getElementById('tab-suggestions').classList.remove('active');
+
+            // Show selected tab
+            document.getElementById(`admin-tab-${tabName}`).classList.add('active');
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+
+            // Load data for the selected tab
+            if (tabName === 'requests') {
+                loadChecklistRequests();
+            } else if (tabName === 'suggestions') {
+                loadSuggestions();
+            }
+        }
+
+        // ==============================
+        // SUGGESTIONS ADMIN FUNCTIONS
+        // ==============================
+
+        async function loadSuggestions() {
+            const container = document.getElementById('suggestionsTableContainer');
+            const statusFilter = document.getElementById('suggestionStatusFilter').value;
+
+            try {
+                container.innerHTML = '<div class="loading">Loading suggestions...</div>';
+
+                let url = `${API_URL}/checklist/suggestions`;
+                if (statusFilter) {
+                    url += `?status=${statusFilter}`;
+                }
+
+                const response = await fetch(url);
+                const suggestions = await response.json();
+
+                document.getElementById('suggestionCount').textContent = suggestions.length;
+
+                if (suggestions.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">💭</div>
+                            <h3>No suggestions yet</h3>
+                            <p>When users submit feedback, it will appear here.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Build table
+                let html = '<div style="overflow-x: auto;">';
+                html += '<table style="width: 100%; border-collapse: collapse; font-size: 0.9em;">';
+                html += '<thead><tr style="background: #f3f4f6;">';
+                html += '<th style="padding: 12px; border: 1px solid #ddd; text-align: left;">ID</th>';
+                html += '<th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Category</th>';
+                html += '<th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Title</th>';
+                html += '<th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Description</th>';
+                html += '<th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Email</th>';
+                html += '<th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Status</th>';
+                html += '<th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Submitted</th>';
+                html += '<th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Actions</th>';
+                html += '</tr></thead><tbody>';
+
+                suggestions.forEach(sug => {
+                    const date = new Date(sug.created_at);
+                    const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+
+                    // Category colors
+                    let categoryColor = '#6b7280';
+                    if (sug.category === 'feature') categoryColor = '#3b82f6';
+                    else if (sug.category === 'bug') categoryColor = '#dc2626';
+                    else if (sug.category === 'improvement') categoryColor = '#10b981';
+                    else if (sug.category === 'ui') categoryColor = '#8b5cf6';
+
+                    // Status colors
+                    let statusColor = '#6b7280';
+                    if (sug.status === 'new') statusColor = '#3b82f6';
+                    else if (sug.status === 'reviewing') statusColor = '#eab308';
+                    else if (sug.status === 'planned') statusColor = '#8b5cf6';
+                    else if (sug.status === 'completed') statusColor = '#16a34a';
+                    else if (sug.status === 'rejected') statusColor = '#dc2626';
+
+                    html += '<tr style="border-bottom: 1px solid #e5e7eb;">';
+                    html += `<td style="padding: 12px; border: 1px solid #ddd;"><strong>#${sug.id}</strong></td>`;
+                    html += `<td style="padding: 12px; border: 1px solid #ddd;">
+                                <span style="padding: 4px 12px; background: ${categoryColor}; color: white; border-radius: 4px; font-size: 0.85em; font-weight: 600;">
+                                    ${sug.category.toUpperCase()}
+                                </span>
+                             </td>`;
+                    html += `<td style="padding: 12px; border: 1px solid #ddd;"><strong>${sug.title}</strong></td>`;
+                    html += `<td style="padding: 12px; border: 1px solid #ddd; max-width: 300px; overflow: hidden; text-overflow: ellipsis;">${sug.description}</td>`;
+                    html += `<td style="padding: 12px; border: 1px solid #ddd;">${sug.email || 'Not provided'}</td>`;
+                    html += `<td style="padding: 12px; border: 1px solid #ddd;">
+                                <span style="padding: 4px 12px; background: ${statusColor}; color: white; border-radius: 4px; font-size: 0.85em; font-weight: 600;">
+                                    ${sug.status.toUpperCase()}
+                                </span>
+                             </td>`;
+                    html += `<td style="padding: 12px; border: 1px solid #ddd; white-space: nowrap;">${formattedDate}</td>`;
+                    html += `<td style="padding: 12px; border: 1px solid #ddd;">
+                                <div style="display: flex; flex-direction: column; gap: 6px; min-width: 180px;">
+                                    <div style="display: flex; gap: 4px;">
+                                        <button onclick="updateSuggestionStatus(${sug.id}, 'new')"
+                                                style="flex: 1; padding: 4px 8px; font-size: 0.75em; border: none; border-radius: 4px; cursor: pointer; background: #3b82f6; color: white; font-weight: 600;"
+                                                ${sug.status === 'new' ? 'disabled' : ''}>
+                                            New
+                                        </button>
+                                        <button onclick="updateSuggestionStatus(${sug.id}, 'reviewing')"
+                                                style="flex: 1; padding: 4px 8px; font-size: 0.75em; border: none; border-radius: 4px; cursor: pointer; background: #eab308; color: white; font-weight: 600;"
+                                                ${sug.status === 'reviewing' ? 'disabled' : ''}>
+                                            Reviewing
+                                        </button>
+                                    </div>
+                                    <div style="display: flex; gap: 4px;">
+                                        <button onclick="updateSuggestionStatus(${sug.id}, 'planned')"
+                                                style="flex: 1; padding: 4px 8px; font-size: 0.75em; border: none; border-radius: 4px; cursor: pointer; background: #8b5cf6; color: white; font-weight: 600;"
+                                                ${sug.status === 'planned' ? 'disabled' : ''}>
+                                            Planned
+                                        </button>
+                                        <button onclick="updateSuggestionStatus(${sug.id}, 'completed')"
+                                                style="flex: 1; padding: 4px 8px; font-size: 0.75em; border: none; border-radius: 4px; cursor: pointer; background: #16a34a; color: white; font-weight: 600;"
+                                                ${sug.status === 'completed' ? 'disabled' : ''}>
+                                            Completed
+                                        </button>
+                                    </div>
+                                    <button onclick="updateSuggestionStatus(${sug.id}, 'rejected')"
+                                            style="width: 100%; padding: 4px 8px; font-size: 0.75em; border: none; border-radius: 4px; cursor: pointer; background: #dc2626; color: white; font-weight: 600;"
+                                            ${sug.status === 'rejected' ? 'disabled' : ''}>
+                                        Rejected
+                                    </button>
+                                </div>
+                             </td>`;
+                    html += '</tr>';
+                });
+
+                html += '</tbody></table></div>';
+
+                container.innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading suggestions:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">❌</div>
+                        <h3>Error loading suggestions</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function updateSuggestionStatus(suggestionId, newStatus) {
+            try {
+                const response = await fetch(`${API_URL}/checklist/suggestions/${suggestionId}/status?status=${newStatus}`, {
+                    method: 'PATCH'
+                });
+
+                if (response.ok) {
+                    showMessage(`Suggestion #${suggestionId} updated to ${newStatus}`, 'success');
+                    loadSuggestions();
+                } else {
+                    const error = await response.json();
+                    showMessage(`Error: ${error.detail || 'Could not update status'}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Error connecting to server', 'error');
+                console.error('Error:', error);
+            }
+        }
+
+        // ==============================
+        // CSV CARD IMPORT FUNCTIONS
+        // ==============================
+
+        var importedCards = [];
+
+        async function handleCardCsvUpload(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                console.log('No file selected');
+                return;
+            }
+
+            console.log('File selected:', file.name);
+            showMessage(`Loading ${file.name}...`, 'success');
+
+            const reader = new FileReader();
+
+            reader.onerror = function(e) {
+                console.error('FileReader error:', e);
+                showMessage('Error reading file. Please try again.', 'error');
+            };
+
+            reader.onload = async function(e) {
+                try {
+                    console.log('File loaded, parsing...');
+                    const text = e.target.result;
+                    parseAndPreviewCards(text);
+                } catch (error) {
+                    console.error('Error parsing CSV:', error);
+                    showMessage(`Error parsing CSV: ${error.message}`, 'error');
+                }
+            };
+
+            reader.readAsText(file);
+        }
+
+        function parseAndPreviewCards(csvText) {
+            try {
+                console.log('Starting CSV parse, text length:', csvText.length);
+
+                const lines = csvText.trim().split('\n');
+                console.log('Total lines:', lines.length);
+
+                if (lines.length < 2) {
+                    showMessage('CSV file is empty or invalid', 'error');
+                    return;
+                }
+
+                // Parse header
+                const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+                console.log('Headers:', headers);
+
+                // Parse rows
+                importedCards = [];
+                const errors = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+
+                const values = parseCSVLine(line);
+
+                try {
+                    const card = {
+                        set_name: values[0] || '',
+                        card_number: values[1] || '',
+                        player: values[2] || '',
+                        team: values[3] || null,
+                        year: values[4] || null,
+                        variety: values[5] || null,
+                        parallel: values[6] || null,
+                        autograph: (values[7] && values[7].toLowerCase() === 'yes') || false,
+                        numbered: values[8] || null,
+                        graded: values[9] || null,
+                        price_paid: values[10] ? parseFloat(values[10].replace(/[$,]/g, '')) : null,
+                        current_value: values[11] ? parseFloat(values[11].replace(/[$,]/g, '')) : null,
+                        location: values[12] || null,
+                        quantity: values[13] ? parseInt(values[13]) : 1,
+                        notes: values[14] || null
+                    };
+
+                    // Add all cards - missing fields will be prompted for during import
+                    importedCards.push(card);
+
+                    // Track warnings for missing required fields (only Player and Card Number are required)
+                    const missingFields = [];
+                    if (!card.card_number || card.card_number.trim() === '') missingFields.push('Card Number');
+                    if (!card.player || card.player.trim() === '') missingFields.push('Player');
+
+                    if (missingFields.length > 0) {
+                        errors.push(`Row ${i + 1}: Missing ${missingFields.join(', ')} - you'll be prompted during import`);
+                    }
+                } catch (error) {
+                    console.error('Error parsing row', i + 1, ':', error);
+                    errors.push(`Row ${i + 1}: ${error.message}`);
+                }
+            }
+
+                console.log('Parsed cards:', importedCards.length);
+                console.log('Errors:', errors.length);
+
+                displayImportPreview(importedCards, errors);
+            } catch (error) {
+                console.error('Error in parseAndPreviewCards:', error);
+                showMessage(`Error parsing CSV: ${error.message}`, 'error');
+            }
+        }
+
+        function parseCSVLine(line) {
+            const values = [];
+            let current = '';
+            let inQuotes = false;
+
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    values.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            values.push(current.trim());
+
+            return values;
+        }
+
+        function displayImportPreview(cards, errors) {
+            console.log('Displaying import preview, cards:', cards.length, 'errors:', errors.length);
+
+            const preview = document.getElementById('cardImportPreview');
+            if (!preview) {
+                console.error('cardImportPreview element not found!');
+                showMessage('Error: Preview container not found', 'error');
+                return;
+            }
+
+            let html = '<div class="import-preview-card">';
+            html += '<h3 style="margin: 0 0 20px 0; color: #1e3a8a;">📊 Import Preview</h3>';
+
+            // Stats
+            html += '<div class="import-stats">';
+            html += `<div class="import-stat">
+                        <div class="import-stat-label">Total Cards</div>
+                        <div class="import-stat-value">${cards.length}</div>
+                    </div>`;
+            html += `<div class="import-stat">
+                        <div class="import-stat-label">Valid</div>
+                        <div class="import-stat-value" style="color: #16a34a;">${cards.length}</div>
+                    </div>`;
+            html += `<div class="import-stat">
+                        <div class="import-stat-label">Errors</div>
+                        <div class="import-stat-value" style="color: #dc2626;">${errors.length}</div>
+                    </div>`;
+            html += '</div>';
+
+            // Warnings
+            if (errors.length > 0) {
+                html += '<div class="import-errors">';
+                html += '<h4>⚠️ Warnings</h4>';
+                html += '<ul>';
+                errors.forEach(error => {
+                    html += `<li>${error}</li>`;
+                });
+                html += '</ul>';
+                html += '<p style="margin: 10px 0 0 0; color: #ea580c;"><strong>Note:</strong> You will be prompted to fill in missing required fields during import.</p>';
+                html += '</div>';
+            }
+
+            // Sample preview
+            if (cards.length > 0) {
+                html += '<h4 style="margin: 20px 0 10px 0;">Preview (first 5 cards)</h4>';
+                html += '<div style="overflow-x: auto;">';
+                html += '<table style="width: 100%; border-collapse: collapse; font-size: 0.9em;">';
+                html += '<thead><tr style="background: #f3f4f6;">';
+                html += '<th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Set</th>';
+                html += '<th style="padding: 8px; border: 1px solid #ddd; text-align: left;">#</th>';
+                html += '<th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Player</th>';
+                html += '<th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Team</th>';
+                html += '<th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Year</th>';
+                html += '<th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Variety</th>';
+                html += '</tr></thead><tbody>';
+
+                cards.slice(0, 5).forEach(card => {
+                    html += '<tr>';
+                    html += `<td style="padding: 8px; border: 1px solid #ddd;">${card.set_name}</td>`;
+                    html += `<td style="padding: 8px; border: 1px solid #ddd;">${card.card_number}</td>`;
+                    html += `<td style="padding: 8px; border: 1px solid #ddd;">${card.player}</td>`;
+                    html += `<td style="padding: 8px; border: 1px solid #ddd;">${card.team || '-'}</td>`;
+                    html += `<td style="padding: 8px; border: 1px solid #ddd;">${card.year || '-'}</td>`;
+                    html += `<td style="padding: 8px; border: 1px solid #ddd;">${card.variety || '-'}</td>`;
+                    html += '</tr>';
+                });
+
+                html += '</tbody></table></div>';
+
+                if (cards.length > 5) {
+                    html += `<p style="color: #666; margin-top: 10px; font-size: 0.9em;">... and ${cards.length - 5} more cards</p>`;
+                }
+            }
+
+            // Action buttons
+            html += '<div style="margin-top: 30px; display: flex; gap: 15px;">';
+            if (cards.length > 0) {
+                html += '<button class="btn btn-primary" onclick="importCards()">✅ Import ' + cards.length + ' Card(s)</button>';
+            }
+            html += '<button class="btn btn-secondary" onclick="cancelImport()">❌ Cancel</button>';
+            html += '</div>';
+
+            html += '</div>';
+
+            preview.innerHTML = html;
+        }
+
+        // Import state
+        var currentImportIndex = 0;
+        var importSuccessCount = 0;
+        var importErrorCount = 0;
+        var importErrors = [];
+        var pendingCard = null;
+        var importResolve = null;
+
+        async function importCards() {
+            if (importedCards.length === 0) {
+                showMessage('No cards to import', 'error');
+                return;
+            }
+
+            // Reset counters
+            currentImportIndex = 0;
+            importSuccessCount = 0;
+            importErrorCount = 0;
+            importErrors = [];
+
+            // Show progress modal
+            document.getElementById('importProgressModal').classList.add('active');
+            document.getElementById('closeImportBtn').disabled = true;
+            document.getElementById('totalCount').textContent = importedCards.length;
+            document.getElementById('successCount').textContent = 0;
+            document.getElementById('errorCount').textContent = 0;
+            document.getElementById('progressBar').style.width = '0%';
+            document.getElementById('progressPercent').textContent = '0%';
+            document.getElementById('progressText').textContent = 'Starting import...';
+            document.getElementById('currentCardInfo').style.display = 'none';
+            document.getElementById('errorLogContainer').style.display = 'none';
+            document.getElementById('errorLog').innerHTML = '';
+
+            // Process cards one by one
+            for (let i = 0; i < importedCards.length; i++) {
+                currentImportIndex = i;
+                const card = importedCards[i];
+
+                // Update progress
+                const progress = Math.round(((i + 1) / importedCards.length) * 100);
+                document.getElementById('progressBar').style.width = progress + '%';
+                document.getElementById('progressPercent').textContent = progress + '%';
+                document.getElementById('progressText').textContent = `Processing card ${i + 1} of ${importedCards.length}`;
+
+                // Show current card
+                document.getElementById('currentCardInfo').style.display = 'block';
+                document.getElementById('currentCardText').textContent = `${card.player} - ${card.set_name} #${card.card_number}`;
+
+                // Check for missing required fields (only Player and Card Number are required)
+                const missingFields = [];
+                if (!card.card_number || card.card_number.trim() === '') missingFields.push('card_number');
+                if (!card.player || card.player.trim() === '') missingFields.push('player');
+
+                if (missingFields.length > 0) {
+                    // Prompt user to fill in missing fields
+                    const result = await promptForMissingFields(card, missingFields, i + 1);
+
+                    if (result === 'skip') {
+                        importErrorCount++;
+                        importErrors.push(`Row ${i + 1}: Skipped - missing required fields`);
+                        document.getElementById('errorCount').textContent = importErrorCount;
+                        continue;
+                    } else if (result === 'addAnyways') {
+                        // User chose to add the card anyway with missing fields
+                        // Continue with import without modifying the card data
+                    } else if (result) {
+                        // User provided missing fields, merge them
+                        Object.assign(card, result);
+                    }
+                }
+
+                // Import the card
+                try {
+                    const response = await fetch(`${API_URL}/cards/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(card)
+                    });
+
+                    if (response.ok) {
+                        importSuccessCount++;
+                        document.getElementById('successCount').textContent = importSuccessCount;
+                    } else {
+                        const errorData = await response.json();
+                        importErrorCount++;
+                        importErrors.push(`Row ${i + 1}: ${errorData.detail || 'Import failed'}`);
+                        document.getElementById('errorCount').textContent = importErrorCount;
+                    }
+                } catch (error) {
+                    importErrorCount++;
+                    importErrors.push(`Row ${i + 1}: ${error.message}`);
+                    document.getElementById('errorCount').textContent = importErrorCount;
+                }
+
+                // Small delay to show progress
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+
+            // Import complete
+            document.getElementById('progressText').textContent = 'Import complete!';
+            document.getElementById('currentCardInfo').style.display = 'none';
+            document.getElementById('closeImportBtn').disabled = false;
+
+            // Show errors if any
+            if (importErrors.length > 0) {
+                document.getElementById('errorLogContainer').style.display = 'block';
+                let errorHtml = '';
+                importErrors.forEach(error => {
+                    errorHtml += `<div style="padding: 5px 0; border-bottom: 1px solid #fecaca;">${error}</div>`;
+                });
+                document.getElementById('errorLog').innerHTML = errorHtml;
+            }
+
+            // Reset preview
+            document.getElementById('cardImportPreview').innerHTML = '';
+            document.getElementById('cardCsvFile').value = '';
+            importedCards = [];
+
+            // Reload collection
+            loadCards();
+            loadStats();
+        }
+
+        function promptForMissingFields(card, missingFields, rowNumber) {
+            return new Promise((resolve) => {
+                pendingCard = card;
+                importResolve = resolve;
+
+                // Show card info
+                let cardInfoHtml = '<p style="color: #666; margin-bottom: 10px;"><strong>Row ' + rowNumber + '</strong></p>';
+                cardInfoHtml += '<ul style="margin-left: 20px; color: #666;">';
+                if (card.set_name) cardInfoHtml += `<li>Set Name: ${card.set_name}</li>`;
+                if (card.card_number) cardInfoHtml += `<li>Card Number: ${card.card_number}</li>`;
+                if (card.player) cardInfoHtml += `<li>Player: ${card.player}</li>`;
+                if (card.team) cardInfoHtml += `<li>Team: ${card.team}</li>`;
+                if (card.year) cardInfoHtml += `<li>Year: ${card.year}</li>`;
+                cardInfoHtml += '</ul>';
+
+                document.getElementById('missingFieldCardInfo').innerHTML = cardInfoHtml;
+
+                // Build input fields for missing data
+                let inputsHtml = '';
+                missingFields.forEach(field => {
+                    const labels = {
+                        'set_name': 'Set Name',
+                        'card_number': 'Card Number',
+                        'player': 'Player Name'
+                    };
+
+                    inputsHtml += `
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">${labels[field]} *</label>
+                            <input type="text" id="missing_${field}" required
+                                   style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1em;">
+                        </div>
+                    `;
+                });
+
+                document.getElementById('missingFieldInputs').innerHTML = inputsHtml;
+
+                // Show modal
+                document.getElementById('missingFieldModal').classList.add('active');
+            });
+        }
+
+        function submitMissingFields() {
+            const missingData = {};
+
+            // Collect values from inputs
+            ['set_name', 'card_number', 'player'].forEach(field => {
+                const input = document.getElementById('missing_' + field);
+                if (input) {
+                    const value = input.value.trim();
+                    if (value) {
+                        missingData[field] = value;
+                    }
+                }
+            });
+
+            // Validate required fields are filled
+            const stillMissing = [];
+            if (!pendingCard.set_name && !missingData.set_name) stillMissing.push('Set Name');
+            if (!pendingCard.card_number && !missingData.card_number) stillMissing.push('Card Number');
+            if (!pendingCard.player && !missingData.player) stillMissing.push('Player');
+
+            if (stillMissing.length > 0) {
+                alert('Please fill in all required fields: ' + stillMissing.join(', '));
+                return;
+            }
+
+            // Close modal and resolve promise
+            document.getElementById('missingFieldModal').classList.remove('active');
+            if (importResolve) {
+                importResolve(missingData);
+                importResolve = null;
+            }
+        }
+
+        function skipMissingFieldCard() {
+            document.getElementById('missingFieldModal').classList.remove('active');
+            if (importResolve) {
+                importResolve('skip');
+                importResolve = null;
+            }
+        }
+
+        function addCardAnyways() {
+            // Add the card with missing fields as-is (no validation)
+            document.getElementById('missingFieldModal').classList.remove('active');
+            if (importResolve) {
+                importResolve('addAnyways'); // Special flag to bypass validation
+                importResolve = null;
+            }
+        }
+
+        function closeImportProgress() {
+            document.getElementById('importProgressModal').classList.remove('active');
+        }
+
+        function cancelImport() {
+            importedCards = [];
+            document.getElementById('cardImportPreview').innerHTML = '';
+            document.getElementById('cardCsvFile').value = '';
+        }
+
+        // ==============================
+        // ADMIN PANEL FUNCTIONS
+        // ==============================
+
+        async function loadChecklistRequests() {
+            const container = document.getElementById('requestsTableContainer');
+            const statusFilter = document.getElementById('statusFilter').value;
+
+            try {
+                container.innerHTML = '<div class="loading">Loading requests...</div>';
+
+                let url = `${API_URL}/checklist/requests`;
+                if (statusFilter) {
+                    url += `?status=${statusFilter}`;
+                }
+
+                const response = await fetch(url);
+                const requests = await response.json();
+
+                document.getElementById('requestCount').textContent = requests.length;
+
+                if (requests.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📭</div>
+                            <h3>No checklist requests</h3>
+                            <p>When users request checklists, they'll appear here.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Build table
+                let html = '<div style="overflow-x: auto;">';
+                html += '<table style="width: 100%; border-collapse: collapse; font-size: 0.9em;">';
+                html += '<thead><tr style="background: #f3f4f6;">';
+                html += '<th style="padding: 12px; border: 1px solid #ddd; text-align: left;">ID</th>';
+                html += '<th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Set Name</th>';
+                html += '<th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Year</th>';
+                html += '<th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Manufacturer</th>';
+                html += '<th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Priority</th>';
+                html += '<th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Status</th>';
+                html += '<th style="padding: 12px; border: 1px solid #ddd; text-align: left;">User Email</th>';
+                html += '<th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Notes</th>';
+                html += '<th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Submitted</th>';
+                html += '<th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Actions</th>';
+                html += '</tr></thead><tbody>';
+
+                requests.forEach(req => {
+                    const date = new Date(req.created_at);
+                    const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+
+                    // Priority badge color
+                    let priorityColor = '#6b7280';
+                    if (req.priority === 'high') priorityColor = '#dc2626';
+                    else if (req.priority === 'normal') priorityColor = '#3b82f6';
+
+                    // Status badge color
+                    let statusColor = '#6b7280';
+                    if (req.status === 'pending') statusColor = '#eab308';
+                    else if (req.status === 'processing') statusColor = '#3b82f6';
+                    else if (req.status === 'completed') statusColor = '#16a34a';
+                    else if (req.status === 'rejected') statusColor = '#dc2626';
+
+                    html += '<tr style="border-bottom: 1px solid #e5e7eb;">';
+                    html += `<td style="padding: 12px; border: 1px solid #ddd;"><strong>#${req.id}</strong></td>`;
+                    html += `<td style="padding: 12px; border: 1px solid #ddd;"><strong>${req.set_name}</strong></td>`;
+                    html += `<td style="padding: 12px; border: 1px solid #ddd;">${req.year}</td>`;
+                    html += `<td style="padding: 12px; border: 1px solid #ddd;">${req.manufacturer || '-'}</td>`;
+                    html += `<td style="padding: 12px; border: 1px solid #ddd;">
+                                <span style="padding: 4px 12px; background: ${priorityColor}; color: white; border-radius: 4px; font-size: 0.85em; font-weight: 600;">
+                                    ${req.priority.toUpperCase()}
+                                </span>
+                             </td>`;
+                    html += `<td style="padding: 12px; border: 1px solid #ddd;">
+                                <span style="padding: 4px 12px; background: ${statusColor}; color: white; border-radius: 4px; font-size: 0.85em; font-weight: 600;">
+                                    ${req.status.toUpperCase()}
+                                </span>
+                             </td>`;
+                    html += `<td style="padding: 12px; border: 1px solid #ddd;">${req.email || 'Not provided'}</td>`;
+                    html += `<td style="padding: 12px; border: 1px solid #ddd; max-width: 200px; overflow: hidden; text-overflow: ellipsis;">${req.notes || '-'}</td>`;
+                    html += `<td style="padding: 12px; border: 1px solid #ddd; white-space: nowrap;">${formattedDate}</td>`;
+                    html += `<td style="padding: 12px; border: 1px solid #ddd;">
+                                <div style="display: flex; flex-direction: column; gap: 6px; min-width: 180px;">
+                                    <div style="display: flex; gap: 4px;">
+                                        <button onclick="updateRequestStatus(${req.id}, 'pending')"
+                                                style="flex: 1; padding: 4px 8px; font-size: 0.75em; border: none; border-radius: 4px; cursor: pointer; background: #eab308; color: white; font-weight: 600;"
+                                                ${req.status === 'pending' ? 'disabled' : ''}>
+                                            Pending
+                                        </button>
+                                        <button onclick="updateRequestStatus(${req.id}, 'processing')"
+                                                style="flex: 1; padding: 4px 8px; font-size: 0.75em; border: none; border-radius: 4px; cursor: pointer; background: #3b82f6; color: white; font-weight: 600;"
+                                                ${req.status === 'processing' ? 'disabled' : ''}>
+                                            Processing
+                                        </button>
+                                    </div>
+                                    <div style="display: flex; gap: 4px;">
+                                        <button onclick="updateRequestStatus(${req.id}, 'completed')"
+                                                style="flex: 1; padding: 4px 8px; font-size: 0.75em; border: none; border-radius: 4px; cursor: pointer; background: #16a34a; color: white; font-weight: 600;"
+                                                ${req.status === 'completed' ? 'disabled' : ''}>
+                                            Completed
+                                        </button>
+                                        <button onclick="updateRequestStatus(${req.id}, 'rejected')"
+                                                style="flex: 1; padding: 4px 8px; font-size: 0.75em; border: none; border-radius: 4px; cursor: pointer; background: #dc2626; color: white; font-weight: 600;"
+                                                ${req.status === 'rejected' ? 'disabled' : ''}>
+                                            Rejected
+                                        </button>
+                                    </div>
+                                </div>
+                             </td>`;
+                    html += '</tr>';
+                });
+
+                html += '</tbody></table></div>';
+
+                container.innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading requests:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">❌</div>
+                        <h3>Error loading requests</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function updateRequestStatus(requestId, newStatus) {
+            try {
+                const response = await fetch(`${API_URL}/checklist/requests/${requestId}/status?status=${newStatus}`, {
+                    method: 'PATCH'
+                });
+
+                if (response.ok) {
+                    showMessage(`Request #${requestId} updated to ${newStatus}`, 'success');
+                    loadChecklistRequests();
+                } else {
+                    const error = await response.json();
+                    showMessage(`Error: ${error.detail || 'Could not update status'}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Error connecting to server', 'error');
+                console.error('Error:', error);
+            }
+        }
+
+        async function deleteChecklistRequest(requestId) {
+            if (!confirm('Are you sure you want to delete this request?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/checklist/requests/${requestId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    showMessage('Request deleted successfully', 'success');
+                    loadChecklistRequests();
+                } else {
+                    showMessage('Error deleting request', 'error');
+                }
+            } catch (error) {
+                showMessage('Error connecting to server', 'error');
+                console.error('Error:', error);
+            }
+        }
+
+        // Keep old function name for compatibility but point to new function
+        async function loadImportedSets() {
+            await loadChecklistSummary();
+        }
+
+        async function loadSetDropdown() {
+            try {
+                const response = await fetch(`${API_URL}/checklist/summary`);
+                const checklists = await response.json();
+
+                const dropdown = document.getElementById('set_name');
+                const currentValue = dropdown.value;
+
+                // Clear existing options except the first one
+                dropdown.innerHTML = '<option value="">Select a set...</option>';
+
+                // Group by year
+                const grouped = {};
+                checklists.forEach(checklist => {
+                    if (!grouped[checklist.year]) {
+                        grouped[checklist.year] = [];
+                    }
+                    grouped[checklist.year].push(checklist.set_name);
+                });
+
+                // Sort years descending
+                const years = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+
+                // Add optgroups for each year
+                years.forEach(year => {
+                    const optgroup = document.createElement('optgroup');
+                    optgroup.label = `📅 ${year}`;
+
+                    grouped[year].sort().forEach(setName => {
+                        const option = document.createElement('option');
+                        option.value = setName;
+                        option.textContent = setName;
+                        optgroup.appendChild(option);
+                    });
+
+                    dropdown.appendChild(optgroup);
+                });
+
+                // Restore previous selection if it still exists
+                if (currentValue) {
+                    dropdown.value = currentValue;
+                }
+
+                // Auto-populate year when set is selected
+                dropdown.addEventListener('change', function() {
+                    const selectedSet = checklists.find(c => c.set_name === this.value);
+                    if (selectedSet) {
+                        document.getElementById('year').value = selectedSet.year;
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading set dropdown:', error);
+            }
+        }
+
+        let editingCardId = null;
+
+        async function editCard(id) {
+            try {
+                // Get card data
+                const response = await fetch(`${API_URL}/cards/${id}`);
+                if (!response.ok) {
+                    showMessage('Error loading card', 'error');
+                    return;
+                }
+
+                const card = await response.json();
+                editingCardId = id;
+
+                // Populate edit form with card data
+                document.getElementById('edit_set_name').value = card.set_name || '';
+                document.getElementById('edit_card_number').value = card.card_number || '';
+                document.getElementById('edit_player').value = card.player || '';
+                document.getElementById('edit_team').value = card.team || '';
+                document.getElementById('edit_year').value = card.year || '';
+                document.getElementById('edit_variety').value = card.variety || '';
+                document.getElementById('edit_parallel').value = card.parallel || '';
+                document.getElementById('edit_autograph').checked = card.autograph || false;
+                document.getElementById('edit_numbered').value = card.numbered || '';
+                document.getElementById('edit_graded').value = card.graded || '';
+                document.getElementById('edit_price_paid').value = card.price_paid || '';
+                document.getElementById('edit_current_value').value = card.current_value || '';
+                document.getElementById('edit_location').value = card.location || '';
+                document.getElementById('edit_quantity').value = card.quantity || 1;
+                document.getElementById('edit_notes').value = card.notes || '';
+
+                // Open modal
+                document.getElementById('editCardModal').classList.add('active');
+            } catch (error) {
+                showMessage('Error loading card for editing', 'error');
+                console.error('Error:', error);
+            }
+        }
+
+        function closeEditCardModal() {
+            document.getElementById('editCardModal').classList.remove('active');
+            editingCardId = null;
+        }
+
+        // Edit card form submission
+        document.getElementById('editCardForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!editingCardId) {
+                showMessage('Error: No card selected for editing', 'error');
+                return;
+            }
+
+            const cardData = {
+                set_name: document.getElementById('edit_set_name').value.trim(),
+                card_number: document.getElementById('edit_card_number').value.trim(),
+                player: document.getElementById('edit_player').value.trim(),
+                team: document.getElementById('edit_team').value.trim() || null,
+                year: document.getElementById('edit_year').value.trim() || null,
+                variety: document.getElementById('edit_variety').value.trim() || null,
+                parallel: document.getElementById('edit_parallel').value.trim() || null,
+                autograph: document.getElementById('edit_autograph').checked,
+                numbered: document.getElementById('edit_numbered').value.trim() || null,
+                graded: document.getElementById('edit_graded').value.trim() || null,
+                price_paid: parseFloat(document.getElementById('edit_price_paid').value) || null,
+                current_value: parseFloat(document.getElementById('edit_current_value').value) || null,
+                location: document.getElementById('edit_location').value.trim() || null,
+                quantity: parseInt(document.getElementById('edit_quantity').value) || 1,
+                notes: document.getElementById('edit_notes').value.trim() || null
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/cards/${editingCardId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(cardData)
+                });
+
+                if (response.ok) {
+                    showMessage('Card updated successfully!', 'success');
+                    closeEditCardModal();
+                    loadStats();
+                    loadCards();
+                } else {
+                    const errorData = await response.json();
+                    showMessage(`Error: ${errorData.detail || 'Could not update card'}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Error connecting to server', 'error');
+                console.error('Error:', error);
+            }
+        });
+
+        async function deleteCard(id) {
+            if (!confirm('Are you sure you want to delete this card?')) return;
+
+            try {
+                const response = await fetch(`${API_URL}/cards/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    showMessage('Card deleted successfully', 'success');
+                    loadStats();
+                    loadCards();
+                }
+            } catch (error) {
+                showMessage('Error deleting card', 'error');
+            }
+        }
+
+        async function autoFillFromChecklist() {
+            const setName = document.getElementById('set_name').value.trim();
+            const year = document.getElementById('year').value.trim();
+            const cardNumber = document.getElementById('card_number').value.trim();
+
+            if (!setName || !year || !cardNumber) {
+                showMessage('Please enter Set Name, Year, and Card Number to auto-fill', 'error');
+                return;
+            }
+
+            try {
+                // Get card data for this specific card number
+                const cardResponse = await fetch(`${API_URL}/checklist/lookup?set_name=${encodeURIComponent(setName)}&year=${encodeURIComponent(year)}&card_number=${encodeURIComponent(cardNumber)}`);
+
+                if (!cardResponse.ok) {
+                    if (cardResponse.status === 404) {
+                        showMessage('Card not found in checklist. You may need to import the checklist first.', 'error');
+                    } else {
+                        showMessage('Error looking up card', 'error');
+                    }
+                    return;
+                }
+
+                const cards = await cardResponse.json();
+
+                // Also fetch ALL parallels from the entire set
+                const allChecklistResponse = await fetch(`${API_URL}/checklist/search?query=&set_name=${encodeURIComponent(setName)}&year=${encodeURIComponent(year)}`);
+
+                let allParallels = new Set();
+                if (allChecklistResponse.ok) {
+                    const allCards = await allChecklistResponse.json();
+                    allCards.forEach(card => {
+                        if (card.parallel) {
+                            allParallels.add(card.parallel);
+                        }
+                    });
+                }
+
+                if (cards.length === 1 && allParallels.size === 0) {
+                    // Single match and no parallels in set - auto-fill directly
+                    fillCardData(cards[0]);
+                    showMessage('Card data auto-filled from checklist!', 'success');
+                } else {
+                    // Show variety and parallel selector
+                    showVarietySelector(cards, Array.from(allParallels).sort());
+                    showMessage(`Found card data. Select variety and parallel.`, 'success');
+                }
+            } catch (error) {
+                showMessage('Error connecting to server', 'error');
+                console.error('Auto-fill error:', error);
+            }
+        }
+
+        function fillCardData(card) {
+            document.getElementById('player').value = card.player || '';
+            document.getElementById('team').value = card.team || '';
+            document.getElementById('variety').value = card.variety || '';
+            document.getElementById('parallel').value = card.parallel || '';
+            document.getElementById('varietySelector').style.display = 'none';
+        }
+
+        function showVarietySelector(cards, allParallels) {
+            const selector = document.getElementById('varietySelector');
+            selector.style.display = 'block';
+
+            // Group cards by variety
+            const varietyGroups = {};
+            cards.forEach(card => {
+                const variety = card.variety || 'Base';
+                if (!varietyGroups[variety]) {
+                    varietyGroups[variety] = [];
+                }
+                varietyGroups[variety].push(card);
+            });
+
+            // Get base card data (any card will do for player/team)
+            const baseCard = cards[0];
+
+            selector.innerHTML = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
+                    <div>
+                        <p style="margin: 0 0 10px 0; font-weight: 600;">Step 1: Select Variety *</p>
+                        <div id="varietyOptions" class="variety-selector"></div>
+                    </div>
+                    <div>
+                        <p style="margin: 0 0 10px 0; font-weight: 600;">Step 2: Select Parallel (Optional)</p>
+                        <div id="parallelOptions" class="variety-selector" style="max-height: 400px; overflow-y: auto;"></div>
+                    </div>
+                </div>
+            `;
+
+            const varietyContainer = selector.querySelector('#varietyOptions');
+            const parallelContainer = selector.querySelector('#parallelOptions');
+
+            let selectedVariety = null;
+            let selectedParallel = null;
+
+            // Show variety options
+            Object.keys(varietyGroups).forEach(variety => {
+                const option = document.createElement('div');
+                option.className = 'variety-option';
+                option.textContent = variety;
+
+                option.onclick = () => {
+                    varietyContainer.querySelectorAll('.variety-option').forEach(o => o.classList.remove('selected'));
+                    option.classList.add('selected');
+                    selectedVariety = variety;
+
+                    // Fill basic data
+                    document.getElementById('player').value = baseCard.player || '';
+                    document.getElementById('team').value = baseCard.team || '';
+                    document.getElementById('variety').value = variety;
+
+                    // Clear parallel if not selected yet
+                    if (!selectedParallel) {
+                        document.getElementById('parallel').value = '';
+                    }
+                };
+                varietyContainer.appendChild(option);
+            });
+
+            // Show ALL parallels from the set
+            if (allParallels.length > 0) {
+                // Add "No Parallel" option first
+                const noParallelOption = document.createElement('div');
+                noParallelOption.className = 'variety-option';
+                noParallelOption.textContent = 'No Parallel';
+                noParallelOption.style.fontStyle = 'italic';
+                noParallelOption.onclick = () => {
+                    parallelContainer.querySelectorAll('.variety-option').forEach(o => o.classList.remove('selected'));
+                    noParallelOption.classList.add('selected');
+                    selectedParallel = null;
+                    document.getElementById('parallel').value = '';
+                };
+                parallelContainer.appendChild(noParallelOption);
+
+                // Add all parallels
+                allParallels.forEach(parallel => {
+                    const option = document.createElement('div');
+                    option.className = 'variety-option';
+                    option.textContent = parallel;
+
+                    option.onclick = () => {
+                        parallelContainer.querySelectorAll('.variety-option').forEach(o => o.classList.remove('selected'));
+                        option.classList.add('selected');
+                        selectedParallel = parallel;
+                        document.getElementById('parallel').value = parallel;
+                    };
+                    parallelContainer.appendChild(option);
+                });
+            } else {
+                parallelContainer.innerHTML = '<p style="padding: 10px; color: #666; font-style: italic;">No parallels found in this set</p>';
+            }
+
+            // Auto-select first variety if only one
+            if (Object.keys(varietyGroups).length === 1) {
+                varietyContainer.querySelector('.variety-option').click();
+            }
+        }
+
+        function showMessage(text, type) {
+            const container = document.getElementById('messageContainer');
+            container.innerHTML = `<div class="message ${type}">${text}</div>`;
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 3000);
+        }
+
+        // ==============================
+        // SUGGESTIONS FORM HANDLER
+        // ==============================
+
+        // Suggestion form submission handler
+        function setupSuggestionForm() {
+            const form = document.getElementById('suggestionForm');
+            if (!form) {
+                console.error('Suggestion form not found');
+                return;
+            }
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const category = document.getElementById('suggestionCategory').value;
+                const title = document.getElementById('suggestionTitle').value.trim();
+                const description = document.getElementById('suggestionDescription').value.trim();
+                const email = document.getElementById('suggestionEmail').value.trim();
+
+                if (!category || !title || !description) {
+                    showMessage('Please fill in all required fields', 'error');
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${API_URL}/checklist/suggestions`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            category: category,
+                            title: title,
+                            description: description,
+                            email: email || null
+                        })
+                    });
+
+                    if (response.ok) {
+                        showMessage('Thank you for your suggestion! We appreciate your feedback.', 'success');
+                        e.target.reset();
+                    } else {
+                        const errorData = await response.json();
+                        showMessage(`Error: ${errorData.detail || 'Could not submit suggestion'}`, 'error');
+                    }
+                } catch (error) {
+                    showMessage('Error connecting to server', 'error');
+                    console.error('Error:', error);
+                }
+            });
+        }
+
+        // ==============================
+        // PRICE TRACKING FUNCTIONALITY
+        // ==============================
+
+        let modalCards = [];
+        let selectedCardIds = new Set();
+
+        // Load tracked count on page load
+        loadTrackedCount();
+
+        async function loadTrackedCount() {
+            try {
+                const response = await fetch(`${API_URL}/cards/tracked`);
+                const trackedCards = await response.json();
+                const count = trackedCards.length;
+
+                document.getElementById('trackedCardCount').textContent = count;
+
+                // Enable/disable check prices button
+                const checkBtn = document.getElementById('checkPricesBtn');
+                if (count > 0) {
+                    checkBtn.disabled = false;
+                    checkBtn.classList.remove('btn-disabled');
+                } else {
+                    checkBtn.disabled = true;
+                    checkBtn.classList.add('btn-disabled');
+                }
+            } catch (error) {
+                console.error('Error loading tracked count:', error);
+            }
+        }
+
+        async function openManageTracking() {
+            const modal = document.getElementById('manageTrackingModal');
+            modal.classList.add('active');
+
+            // Load all cards
+            try {
+                const response = await fetch(`${API_URL}/cards/`);
+                modalCards = await response.json();
+
+                // Get currently tracked cards
+                const trackedResponse = await fetch(`${API_URL}/cards/tracked`);
+                const trackedCards = await trackedResponse.json();
+
+                selectedCardIds = new Set(trackedCards.map(c => c.id));
+
+                displayModalCards(modalCards);
+                updateSelectionCounter();
+            } catch (error) {
+                document.getElementById('cardSelectionGrid').innerHTML = '<p style="color: red;">Error loading cards</p>';
+            }
+        }
+
+        function closeManageTracking() {
+            document.getElementById('manageTrackingModal').classList.remove('active');
+        }
+
+        function displayModalCards(cards) {
+            const grid = document.getElementById('cardSelectionGrid');
+
+            if (cards.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <div class="empty-state-text">No cards in collection</div>
+                        <div class="empty-state-subtext">Add cards to your collection first!</div>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            cards.forEach(card => {
+                const isSelected = selectedCardIds.has(card.id);
+                const value = card.current_value || card.price_paid || 0;
+
+                html += `
+                    <div class="card-item ${isSelected ? 'selected' : ''}" onclick="toggleCardSelection(${card.id}, event)">
+                        <input type="checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation(); toggleCardSelection(${card.id}, event)">
+                        <div class="card-item-header">${card.player}</div>
+                        <div class="card-item-details">
+                            <strong>${card.set_name}</strong><br>
+                            ${card.year || '-'} | #${card.card_number}${card.variety ? ' | ' + card.variety : ''}${card.parallel ? ' | ' + card.parallel : ''}
+                        </div>
+                        <div class="card-item-value">Value: $${value.toFixed(2)}</div>
+                    </div>
+                `;
+            });
+
+            grid.innerHTML = html;
+        }
+
+        function toggleCardSelection(cardId, event) {
+            if (event) event.stopPropagation();
+
+            if (selectedCardIds.has(cardId)) {
+                selectedCardIds.delete(cardId);
+            } else {
+                if (selectedCardIds.size >= 20) {
+                    showMessage('Maximum 20 cards can be tracked at once', 'error');
+                    return;
+                }
+                selectedCardIds.add(cardId);
+            }
+
+            displayModalCards(modalCards);
+            updateSelectionCounter();
+        }
+
+        function updateSelectionCounter() {
+            document.getElementById('selectedCountDisplay').textContent = selectedCardIds.size;
+        }
+
+        function quickSelectMostValuable() {
+            // Sort by value and select top 20
+            const sortedCards = [...modalCards].sort((a, b) => {
+                const valueA = a.current_value || a.price_paid || 0;
+                const valueB = b.current_value || b.price_paid || 0;
+                return valueB - valueA;
+            });
+
+            selectedCardIds = new Set(sortedCards.slice(0, 20).map(c => c.id));
+            displayModalCards(modalCards);
+            updateSelectionCounter();
+        }
+
+        function quickSelectRecentAdditions() {
+            // Sort by created_at (most recent first) and select top 20
+            const sortedCards = [...modalCards].sort((a, b) => {
+                return new Date(b.created_at) - new Date(a.created_at);
+            });
+
+            selectedCardIds = new Set(sortedCards.slice(0, 20).map(c => c.id));
+            displayModalCards(modalCards);
+            updateSelectionCounter();
+        }
+
+        function clearAllSelections() {
+            selectedCardIds.clear();
+            displayModalCards(modalCards);
+            updateSelectionCounter();
+        }
+
+        // Modal search functionality
+        document.addEventListener('DOMContentLoaded', () => {
+            // Setup suggestion form handler
+            setupSuggestionForm();
+
+            // Setup modal search
+            const modalSearch = document.getElementById('modalSearch');
+            if (modalSearch) {
+                modalSearch.addEventListener('input', (e) => {
+                    const query = e.target.value.toLowerCase().trim();
+                    if (query === '') {
+                        displayModalCards(modalCards);
+                    } else {
+                        const filtered = modalCards.filter(card => {
+                            return card.player.toLowerCase().includes(query) ||
+                                   card.set_name.toLowerCase().includes(query) ||
+                                   card.card_number.toLowerCase().includes(query);
+                        });
+                        displayModalCards(filtered);
+                    }
+                });
+            }
+        });
+
+        async function saveTrackedSelection() {
+            try {
+                const cardIds = Array.from(selectedCardIds);
+
+                const response = await fetch(`${API_URL}/cards/update-tracking`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ card_ids: cardIds })
+                });
+
+                if (response.ok) {
+                    showMessage(`Successfully updated tracking for ${cardIds.length} card(s)!`, 'success');
+                    closeManageTracking();
+                    loadTrackedCount();
+                } else {
+                    showMessage('Error updating tracked cards', 'error');
+                }
+            } catch (error) {
+                showMessage('Error connecting to server', 'error');
+            }
+        }
+
+        async function checkTrackedPrices() {
+            const container = document.getElementById('priceResultsContainer');
+            const checkBtn = document.getElementById('checkPricesBtn');
+
+            // Disable button during check
+            checkBtn.disabled = true;
+            checkBtn.classList.add('btn-disabled');
+
+            try {
+                // Get tracked cards
+                const response = await fetch(`${API_URL}/cards/tracked`);
+                const trackedCards = await response.json();
+
+                if (trackedCards.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📭</div>
+                            <div class="empty-state-text">No cards selected for tracking</div>
+                            <div class="empty-state-subtext">Click "Manage Tracked Cards" to select cards</div>
+                        </div>
+                    `;
+                    checkBtn.disabled = false;
+                    checkBtn.classList.remove('btn-disabled');
+                    return;
+                }
+
+                // Show progress
+                container.innerHTML = `
+                    <div class="progress-bar">
+                        <div class="spinner"></div>
+                        Checking prices... (0 of ${trackedCards.length})
+                    </div>
+                `;
+
+                // Simulate checking prices (replace with actual eBay API calls later)
+                const results = [];
+                for (let i = 0; i < trackedCards.length; i++) {
+                    const card = trackedCards[i];
+
+                    // Update progress
+                    container.innerHTML = `
+                        <div class="progress-bar">
+                            <div class="spinner"></div>
+                            Checking prices... (${i + 1} of ${trackedCards.length})
+                        </div>
+                    `;
+
+                    // Call eBay API endpoint (placeholder for now)
+                    try {
+                        const priceResponse = await fetch(`${API_URL}/ebay/check-price`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                card_id: card.id,
+                                player: card.player,
+                                set_name: card.set_name,
+                                year: card.year,
+                                card_number: card.card_number,
+                                variety: card.variety,
+                                parallel: card.parallel
+                            })
+                        });
+
+                        if (priceResponse.ok) {
+                            const priceData = await priceResponse.json();
+                            results.push({
+                                card: card,
+                                ...priceData
+                            });
+                        } else {
+                            // Fallback if API not implemented yet
+                            results.push({
+                                card: card,
+                                avg_sold_price: null,
+                                price_range: 'API not configured',
+                                last_checked: new Date().toISOString(),
+                                ebay_url: buildEbaySearchUrl(card)
+                            });
+                        }
+                    } catch (error) {
+                        // Fallback data
+                        results.push({
+                            card: card,
+                            avg_sold_price: null,
+                            price_range: 'API not configured',
+                            last_checked: new Date().toISOString(),
+                            ebay_url: buildEbaySearchUrl(card)
+                        });
+                    }
+
+                    // Small delay to avoid rate limiting
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                }
+
+                // Display results
+                displayPriceResults(results);
+
+                checkBtn.disabled = false;
+                checkBtn.classList.remove('btn-disabled');
+
+            } catch (error) {
+                container.innerHTML = '<p style="color: red;">Error checking prices</p>';
+                checkBtn.disabled = false;
+                checkBtn.classList.remove('btn-disabled');
+            }
+        }
+
+        function buildEbaySearchUrl(card) {
+            const query = encodeURIComponent(
+                `${card.year || ''} ${card.set_name} ${card.player} ${card.card_number} ${card.variety || ''} ${card.parallel || ''}`.trim()
+            );
+            return `https://www.ebay.com/sch/i.html?_nkw=${query}&LH_Sold=1&LH_Complete=1`;
+        }
+
+        function displayPriceResults(results) {
+            const container = document.getElementById('priceResultsContainer');
+
+            let html = `
+                <div class="price-results">
+                    <h3 style="margin-bottom: 15px;">📊 Price Check Results</h3>
+                    <table class="price-table">
+                        <thead>
+                            <tr>
+                                <th>Card</th>
+                                <th>Set / Year</th>
+                                <th>Card #</th>
+                                <th>Avg Sold Price</th>
+                                <th>Price Range</th>
+                                <th>Last Checked</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            results.forEach(result => {
+                const card = result.card;
+                const avgPrice = result.avg_sold_price ? `$${result.avg_sold_price.toFixed(2)}` : 'N/A';
+                const priceRange = result.price_range || 'N/A';
+                const lastChecked = new Date(result.last_checked).toLocaleDateString();
+
+                html += `
+                    <tr>
+                        <td><strong>${card.player}</strong></td>
+                        <td>${card.set_name}<br><small>${card.year || '-'}</small></td>
+                        <td>#${card.card_number}${card.variety ? '<br><small>' + card.variety + '</small>' : ''}</td>
+                        <td><strong>${avgPrice}</strong></td>
+                        <td>${priceRange}</td>
+                        <td><small>${lastChecked}</small></td>
+                        <td>
+                            <a href="${result.ebay_url}" target="_blank" class="ebay-link">View on eBay</a>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                    <div style="margin-top: 20px; text-align: right;">
+                        <button class="btn btn-primary" onclick="updateCardValuesFromResults()">
+                            💾 Update Card Values from eBay Prices
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = html;
+
+            // Store results globally for update function
+            window.currentPriceResults = results;
+        }
+
+        async function updateCardValuesFromResults() {
+            if (!window.currentPriceResults) {
+                showMessage('No price results to update', 'error');
+                return;
+            }
+
+            if (!confirm('Update current values for all checked cards with eBay average prices?')) {
+                return;
+            }
+
+            try {
+                const updates = window.currentPriceResults
+                    .filter(r => r.avg_sold_price !== null)
+                    .map(r => ({
+                        card_id: r.card.id,
+                        ebay_avg_price: r.avg_sold_price,
+                        current_value: r.avg_sold_price
+                    }));
+
+                if (updates.length === 0) {
+                    showMessage('No valid prices to update', 'error');
+                    return;
+                }
+
+                const response = await fetch(`${API_URL}/cards/bulk-update-values`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ updates: updates })
+                });
+
+                if (response.ok) {
+                    showMessage(`Successfully updated values for ${updates.length} card(s)!`, 'success');
+                    loadStats();
+                    loadCards();
+                } else {
+                    showMessage('Error updating card values', 'error');
+                }
+            } catch (error) {
+                showMessage('Error connecting to server', 'error');
+            }
+        }
+    </script>
+
+    <!-- Footer -->
+    <div class="footer">
+        <div class="footer-brand">
+            <img src="BaseballBinder_thumbnail.png" alt="BaseballBinder Logo" style="height: 35px; vertical-align: middle; margin-right: 10px; filter: brightness(0) invert(1);">
+            BaseballBinder
+        </div>
+        <div class="footer-text">Organize, Track, and Manage Your Baseball Card Collection</div>
+        <a href="https://buymeacoffee.com/baseballbinder" target="_blank" class="bmc-footer">
+            ☕ Support BaseballBinder
+        </a>
+    </div>
+</body>
+</html>
