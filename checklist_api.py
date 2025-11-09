@@ -1,9 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+# -*- coding: utf-8 -*-
+from fastapi import FastAPI, APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func
-from typing import List, Optional
+from sqlalchemy.orm import Session
 from pydantic import BaseModel, ConfigDict
+from typing import List, Optional
 from datetime import datetime
+import logging
 import csv
 import os
 from pathlib import Path
@@ -14,7 +16,11 @@ from email.mime.multipart import MIMEMultipart
 from models import get_db
 from checklist_models import Checklist, ChecklistRequest, Suggestion
 
+app = FastAPI()
+
 router = APIRouter(prefix="/checklist", tags=["checklist"])
+
+logger = logging.getLogger(__name__)
 
 # Pydantic Models
 class ChecklistSummary(BaseModel):
@@ -45,69 +51,89 @@ class ChecklistRequestResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+class ChecklistItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    set_name: str
+    year: str
+    card_number: str
+    player: str
+    team: Optional[str] = None
+    variety: Optional[str] = None
+    rookie: bool
+    parallel: Optional[str] = None
+
 # Helper function to scan and import CSVs from checklists folder
-def scan_and_import_checklists(db: Session):
+def scan_and_import_checklists(db: Session, force: bool = False):
     """
-    Scans /checklists/{year}/ folders and imports CSV files
+    Scans /checklists/{year}/ folders and imports CSV files.
+    If force=True, all existing checklists are cleared before import.
+    If a set already exists for a given year, it is replaced.
+    Also removes checklists from database if their CSV files no longer exist.
     """
     base_path = Path("checklists")
     imported_count = 0
     errors = []
+    logger.info(f"Scanning folder for changes: {base_path.resolve()}")
 
     if not base_path.exists():
         base_path.mkdir(parents=True, exist_ok=True)
         return {"imported": 0, "errors": ["Checklists folder created. Add CSV files to import."]}
 
-    # Scan year folders
+    if force:
+        db.query(Checklist).delete()
+        db.commit()
+        logger.info("Cleared all checklists before reimport (force=True)")
+
+    # Track all CSV files found during scan (set_name, year)
+    found_checklists = set()
+
     for year_folder in base_path.iterdir():
         if not year_folder.is_dir():
             continue
 
         year = year_folder.name
 
-        # Scan CSV files in year folder
         for csv_file in year_folder.glob("*.csv"):
             try:
                 set_name = csv_file.stem.replace('-', ' ').replace('_', ' ').strip()
 
-                # Check if already imported
-                existing_count = db.query(Checklist).filter(
+                # Track this checklist as found
+                found_checklists.add((set_name, year))
+
+                # 🧽 Remove existing records for this set/year before reimporting
+                existing = db.query(Checklist).filter(
                     Checklist.set_name == set_name,
                     Checklist.year == year
                 ).count()
 
-                if existing_count > 0:
-                    continue  # Skip already imported
+                if existing > 0:
+                    db.query(Checklist).filter(
+                        Checklist.set_name == set_name,
+                        Checklist.year == year
+                    ).delete()
+                    db.commit()
+                    logger.info(f"Replacing existing checklist: {year} - {set_name}")
 
-                # Read and parse CSV
                 with open(csv_file, 'r', encoding='utf-8-sig') as f:
                     csv_reader = csv.reader(f, quotechar='"', skipinitialspace=True)
-
-                    # Skip header row
-                    next(csv_reader, None)
-
+                    next(csv_reader, None)  # skip header
                     cards_added = 0
+
                     for row in csv_reader:
                         if len(row) < 3:
                             continue
 
-                        # Parse row: Variety, Card Number, Player, Team, Rookie, Parallel, Unique Variety
-                        variety = row[0].strip() if len(row) > 0 else ""
-                        card_number = row[1].strip() if len(row) > 1 else ""
-                        player = row[2].strip() if len(row) > 2 else ""
-                        team = row[3].strip() if len(row) > 3 else ""
-                        rookie = row[4].strip().lower() in ['yes', 'true', '1', 'rookie', 'rc'] if len(row) > 4 else False
-                        parallel = row[5].strip() if len(row) > 5 else ""
-
                         checklist_entry = Checklist(
                             set_name=set_name,
                             year=year,
-                            card_number=card_number,
-                            player=player,
-                            team=team,
-                            variety=variety,
-                            rookie=rookie,
-                            parallel=parallel
+                            card_number=row[1].strip(),
+                            player=row[2].strip(),
+                            team=row[3].strip() if len(row) > 3 else "",
+                            variety=row[0].strip(),
+                            rookie=(len(row) > 4 and row[4].strip().lower() in ['yes', 'true', '1', 'rookie', 'rc']),
+                            parallel=row[5].strip() if len(row) > 5 else "",
                         )
                         db.add(checklist_entry)
                         cards_added += 1
@@ -120,7 +146,29 @@ def scan_and_import_checklists(db: Session):
                 errors.append(f"{csv_file.name}: {str(e)}")
                 db.rollback()
 
-    return {"imported": imported_count, "errors": errors}
+    # 🗑️ Remove checklists from database that no longer have CSV files
+    all_db_checklists = db.query(
+        Checklist.set_name,
+        Checklist.year
+    ).distinct().all()
+
+    removed_count = 0
+    for db_set_name, db_year in all_db_checklists:
+        if (db_set_name, db_year) not in found_checklists:
+            deleted = db.query(Checklist).filter(
+                Checklist.set_name == db_set_name,
+                Checklist.year == db_year
+            ).delete()
+            if deleted > 0:
+                removed_count += 1
+                logger.info(f"Removed checklist (file no longer exists): {db_year} - {db_set_name}")
+
+    if removed_count > 0:
+        db.commit()
+        logger.info(f"Removed {removed_count} checklist(s) that no longer have CSV files")
+
+    return {"imported": imported_count, "removed": removed_count, "errors": errors}
+
 
 @router.get("/summary", response_model=List[ChecklistSummary])
 def get_checklist_summary(db: Session = Depends(get_db)):
@@ -150,15 +198,37 @@ def get_checklist_summary(db: Session = Depends(get_db)):
     ]
 
 @router.post("/rescan")
-def rescan_checklists(db: Session = Depends(get_db)):
+def rescan_checklists(
+    force: bool = Query(False, description="If true, clears existing checklists before rescanning"),
+    db: Session = Depends(get_db)
+):
     """
-    Rescan the /checklists folder and import new CSV files
+    Rescan the /checklists folder and import new CSV files.
+    Use ?force=true to clear the database before rescanning.
+    Also removes checklists from database if their CSV files no longer exist.
     """
+    if force:
+        db.query(Checklist).delete()
+        db.commit()
+        logger.info("Existing checklists cleared before rescan.")
+
     result = scan_and_import_checklists(db)
 
+    # Build message with import and removal info
+    messages = []
+    if result['imported'] > 0:
+        messages.append(f"Imported {result['imported']} checklist(s)")
+    if result.get('removed', 0) > 0:
+        messages.append(f"Removed {result['removed']} checklist(s)")
+    if not messages:
+        messages.append("No changes detected")
+
+    message = "Scan complete. " + ", ".join(messages) + "."
+
     return {
-        "message": f"Scan complete. Imported {result['imported']} new checklist(s).",
+        "message": message,
         "imported": result['imported'],
+        "removed": result.get('removed', 0),
         "errors": result['errors']
     }
 
@@ -171,7 +241,7 @@ def get_sets_by_year(year: str, db: Session = Depends(get_db)):
 
     return {"year": year, "sets": [s[0] for s in sets]}
 
-@router.get("/{year}/{set_name}")
+@router.get("/{year}/{set_name}", response_model=List[ChecklistItem])
 def get_checklist(year: str, set_name: str, db: Session = Depends(get_db)):
     """Get full checklist for a specific set and year"""
     checklists = db.query(Checklist).filter(

@@ -1,0 +1,31 @@
+meta {
+  name: Get eBay oAuth Token
+  type: http
+  seq: 3
+}
+
+post {
+  url: https://api.ebay.com/identity/v1/oauth2/token
+  body: formUrlEncoded
+  auth: basic
+}
+
+headers {
+  Authorization: Basic QmFzZUJhbGwtQmFzZWJhbGwtUFJELTFlYThmNTU4Yi01MjMzZjNkMTpQUkQtZWE4ZjU1OGJjY2ViLTU3OTMtNDE2ZS1iZTBhLTc0YjA=
+  Content-Type: application/x-www-form-urlencoded
+}
+
+auth:basic {
+  username: 
+  password: 
+}
+
+body:form-urlencoded {
+  grant_type: client_credentials
+  scope: https://api.ebay.com/oauth/api_scope
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

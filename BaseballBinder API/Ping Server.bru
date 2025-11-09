@@ -1,0 +1,24 @@
+meta {
+  name: Ping Server
+  type: http
+  seq: NaN
+}
+
+get {
+  url: {{baseUrl}}/stats
+  body: none
+  auth: inherit
+}
+
+vars:pre-request {
+  baseUrl: http://localhost:8000
+}
+
+vars:post-response {
+  authToken: TEST-TOKEN
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

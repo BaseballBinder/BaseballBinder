@@ -57,8 +57,12 @@ desktop.ini
 .env
 .env.local
 
+# eBay OAuth credentials
+ebay-config.yaml
+
 # eBay API rate limiting
 ebay_rate_limit.json
+ebay_oauth_requests.json
 
 # Logs
 *.log
@@ -80,3 +84,4 @@ build/
 dist/
 *.spec.bak
 releases/
+node_modules

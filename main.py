@@ -8,10 +8,9 @@ from sqlalchemy import func
 import logging
 import json
 
-from models import Card, get_db
+from models import Card, CardPriceHistory, get_db
 from checklist_api import router as checklist_router
-from ebay_api import eBayAPI, eBayAPIError
-from rate_limiter import rate_limiter
+from ebay_service import eBayService, eBayOAuthError
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -102,6 +101,15 @@ class EbayPriceCheckResponse(BaseModel):
     price_range: Optional[str] = None
     last_checked: str
     ebay_url: str
+
+class PriceHistoryPoint(BaseModel):
+    t: datetime
+    v: float | None
+
+class PriceHistoryResponse(BaseModel):
+    card_id: int
+    window: str
+    points: List[PriceHistoryPoint]
 
 @app.get("/")
 def root():
@@ -334,10 +342,12 @@ class EbayPriceResult(BaseModel):
     card_id: int
     player: str
     avg_sold_price: Optional[float] = None
+    median_price: Optional[float] = None  # Median price (resistant to outliers)
     min_price: Optional[float] = None
     max_price: Optional[float] = None
     listing_count: int
     sample_urls: List[str]
+    sample_images: List[str] = []  # eBay listing images for visual verification
     search_keywords: str
     last_checked: str
     success: bool
@@ -345,12 +355,12 @@ class EbayPriceResult(BaseModel):
 
 @app.get("/ebay/test-connection")
 def test_ebay_connection():
-    """Test eBay API connection and credentials"""
+    """Test eBay OAuth connection and credentials"""
     try:
-        ebay = eBayAPI()
+        ebay = eBayService()
         result = ebay.test_connection()
         return result
-    except eBayAPIError as e:
+    except eBayOAuthError as e:
         logger.error(f"eBay connection test failed: {e}")
         return {
             "success": False,
@@ -369,7 +379,7 @@ def test_ebay_connection():
 def check_card_ebay_price(card_id: int, db: Session = Depends(get_db)):
     """
     Check eBay prices for a specific card.
-    Searches sold listings and updates the card's ebay_avg_price and last_price_check.
+    Searches active listings and updates the card's ebay_avg_price and last_price_check.
     """
     # Get the card
     card = db.query(Card).filter(Card.id == card_id).first()
@@ -377,42 +387,65 @@ def check_card_ebay_price(card_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Card not found")
 
     try:
-        # Initialize eBay API
-        ebay = eBayAPI()
+        # Initialize eBay OAuth service
+        ebay = eBayService()
 
-        # Search for sold listings
+        # Search for active listings using Browse API
         logger.info(f"Checking eBay price for card {card_id}: {card.player}")
-        result = ebay.search_sold_listings(
-            player=card.player,
+        result = ebay.search_card(
             year=card.year,
-            set_name=card.set_name,
-            card_number=card.card_number
+            brand=card.set_name,
+            player_name=card.player,
+            card_number=card.card_number,
+            variety=card.variety,
+            parallel=card.parallel,
+            autograph=card.autograph,
+            graded=card.graded,
+            numbered=card.numbered,
+            card_id=card_id
         )
 
+        # Extract pricing info from Browse API response
+        pricing = result.get('pricing', {})
+        avg_price = pricing.get('avg_price')
+
         # Update card in database
-        card.ebay_avg_price = result['avg_price']
+        card.ebay_avg_price = avg_price
+        card.current_value = avg_price  # Update current_value so stats dashboard reflects eBay pricing
         card.last_price_check = datetime.now(timezone.utc)
+        # Record price history if we have a value
+        try:
+            if avg_price is not None:
+                db.add(CardPriceHistory(card_id=card_id, price=avg_price, source='ebay_browse'))
+        except Exception:
+            pass
         db.commit()
 
         timestamp = datetime.now(timezone.utc).isoformat()
+
+        # Extract sample URLs and images from items
+        sample_urls = [item.get('itemWebUrl', '') for item in result.get('items', [])[:3]]
+        sample_images = result.get('sample_images', [])
 
         # Return result
         return EbayPriceResult(
             card_id=card_id,
             player=card.player,
-            avg_sold_price=result['avg_price'],
-            min_price=result['min_price'],
-            max_price=result['max_price'],
-            listing_count=result['listing_count'],
-            sample_urls=result['sample_urls'],
-            search_keywords=result['search_keywords'],
+            avg_sold_price=avg_price,
+            median_price=pricing.get('median_price'),
+            min_price=pricing.get('min_price'),
+            max_price=pricing.get('max_price'),
+            listing_count=result.get('total_results', 0),
+            sample_urls=sample_urls,
+            sample_images=sample_images,
+            search_keywords=result.get('search_query', ''),
             last_checked=timestamp,
             success=True,
-            message=f"Found {result['listing_count']} sold listings" if result['listing_count'] > 0 else "No sold listings found"
+            message=f"Found {result.get('total_results', 0)} active listings" if result.get('total_results', 0) > 0 else "No active listings found"
         )
 
-    except eBayAPIError as e:
-        logger.error(f"eBay API error for card {card_id}: {e}")
+    except eBayOAuthError as e:
+        logger.error(f"eBay OAuth error for card {card_id}: {e}")
         raise HTTPException(status_code=500, detail=f"eBay API error: {str(e)}")
     except Exception as e:
         logger.error(f"Unexpected error checking eBay price for card {card_id}: {e}")
@@ -445,9 +478,9 @@ def check_tracked_prices(db: Session = Depends(get_db)):
         )
 
     try:
-        ebay = eBayAPI()
-    except eBayAPIError as e:
-        logger.error(f"Failed to initialize eBay API: {e}")
+        ebay = eBayService()
+    except eBayOAuthError as e:
+        logger.error(f"Failed to initialize eBay OAuth service: {e}")
         raise HTTPException(status_code=500, detail=f"eBay API initialization failed: {str(e)}")
 
     results = []
@@ -459,40 +492,63 @@ def check_tracked_prices(db: Session = Depends(get_db)):
         try:
             logger.info(f"Checking price {idx}/{len(tracked_cards)}: {card.player}")
 
-            # Search for sold listings
-            result = ebay.search_sold_listings(
-                player=card.player,
+            # Search for active listings using Browse API
+            result = ebay.search_card(
                 year=card.year,
-                set_name=card.set_name,
-                card_number=card.card_number
+                brand=card.set_name,
+                player_name=card.player,
+                card_number=card.card_number,
+                variety=card.variety,
+                parallel=card.parallel,
+                autograph=card.autograph,
+                graded=card.graded,
+                numbered=card.numbered,
+                card_id=card.id
             )
 
+            # Extract pricing info from Browse API response
+            pricing = result.get('pricing', {})
+            avg_price = pricing.get('avg_price')
+
             # Update card in database
-            card.ebay_avg_price = result['avg_price']
+            card.ebay_avg_price = avg_price
+            card.current_value = avg_price  # Update current_value so stats dashboard reflects eBay pricing
             card.last_price_check = datetime.now(timezone.utc)
+            # Record price history if we have a value
+            try:
+                if avg_price is not None:
+                    db.add(CardPriceHistory(card_id=card.id, price=avg_price, source='ebay_browse'))
+            except Exception:
+                pass
             db.commit()
 
             timestamp = datetime.now(timezone.utc).isoformat()
+
+            # Extract sample URLs and images from items
+            sample_urls = [item.get('itemWebUrl', '') for item in result.get('items', [])[:3]]
+            sample_images = result.get('sample_images', [])
 
             # Add to results
             results.append(EbayPriceResult(
                 card_id=card.id,
                 player=card.player,
-                avg_sold_price=result['avg_price'],
-                min_price=result['min_price'],
-                max_price=result['max_price'],
-                listing_count=result['listing_count'],
-                sample_urls=result['sample_urls'],
-                search_keywords=result['search_keywords'],
+                avg_sold_price=avg_price,
+                median_price=pricing.get('median_price'),
+                min_price=pricing.get('min_price'),
+                max_price=pricing.get('max_price'),
+                listing_count=result.get('total_results', 0),
+                sample_urls=sample_urls,
+                sample_images=sample_images,
+                search_keywords=result.get('search_query', ''),
                 last_checked=timestamp,
                 success=True,
-                message=f"Found {result['listing_count']} sold listings" if result['listing_count'] > 0 else "No sold listings found"
+                message=f"Found {result.get('total_results', 0)} active listings" if result.get('total_results', 0) > 0 else "No active listings found"
             ))
 
             successful += 1
 
-        except eBayAPIError as e:
-            logger.error(f"eBay API error for card {card.id}: {e}")
+        except eBayOAuthError as e:
+            logger.error(f"eBay OAuth error for card {card.id}: {e}")
             errors.append(f"{card.player}: {str(e)}")
             failed += 1
             db.rollback()
@@ -511,27 +567,74 @@ def check_tracked_prices(db: Session = Depends(get_db)):
         errors=errors
     )
 
+@app.get("/cards/{card_id}/history", response_model=PriceHistoryResponse)
+def get_card_price_history(card_id: int, window: str = 'lifetime', db: Session = Depends(get_db)):
+    """Return price history points for a card. Window: daily, weekly, monthly, lifetime."""
+    from datetime import timedelta
+    now = datetime.now(timezone.utc)
+
+    start = None
+    w = window.lower()
+    if w in ('day', 'daily'):
+        start = now - timedelta(days=7)
+        w = 'daily'
+    elif w in ('week', 'weekly'):
+        start = now - timedelta(days=30)
+        w = 'weekly'
+    elif w in ('month', 'monthly'):
+        start = now - timedelta(days=180)
+        w = 'monthly'
+    else:
+        w = 'lifetime'
+
+    q = db.query(CardPriceHistory).filter(CardPriceHistory.card_id == card_id)
+    if start is not None:
+        q = q.filter(CardPriceHistory.checked_at >= start)
+    rows = q.order_by(CardPriceHistory.checked_at.asc()).all()
+
+    points = [PriceHistoryPoint(t=r.checked_at, v=r.price) for r in rows]
+    return PriceHistoryResponse(card_id=card_id, window=w, points=points)
+
 @app.get("/ebay/rate-limit-stats")
 def get_rate_limit_stats():
-    """Get current eBay API rate limit statistics"""
+    """Get current eBay OAuth API rate limit statistics"""
     try:
-        stats = rate_limiter.get_stats()
-        return stats
+        ebay = eBayService()
+        count = ebay._get_request_count()
+        can_request, message = ebay._can_make_request()
+        return {
+            "count": count,
+            "limit": ebay.daily_limit,
+            "remaining": ebay.daily_limit - count,
+            "can_request": can_request,
+            "message": message
+        }
     except Exception as e:
         logger.error(f"Error getting rate limit stats: {e}")
         return {
             "error": str(e),
             "count": 0,
             "limit": 5000,
-            "remaining": 5000
+            "remaining": 5000,
+            "can_request": True,
+            "message": "Error retrieving stats"
         }
 
 @app.post("/ebay/reset-rate-limit")
 def reset_rate_limit():
     """Reset rate limit counter (admin only)"""
     try:
-        rate_limiter.reset()
-        return {"message": "Rate limit counter reset successfully"}
+        import json
+        from pathlib import Path
+        from datetime import datetime
+
+        request_count_file = Path("ebay_oauth_requests.json")
+        date_str = datetime.now().strftime('%Y-%m-%d')
+
+        with open(request_count_file, 'w') as f:
+            json.dump({'date': date_str, 'count': 0}, f)
+
+        return {"message": "eBay OAuth rate limit counter reset successfully"}
     except Exception as e:
         logger.error(f"Error resetting rate limit: {e}")
         raise HTTPException(status_code=500, detail=str(e))
