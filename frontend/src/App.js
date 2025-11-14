@@ -115,12 +115,32 @@ export default function App() {
     </VuiBox>
   );
 
+  const hoverStrip = (
+    <VuiBox
+      onMouseEnter={handleOnMouseEnter}
+      sx={{
+        position: "fixed",
+        top: 0,
+        left: direction === "rtl" ? "auto" : 0,
+        right: direction === "rtl" ? 0 : "auto",
+        width: "12px",
+        height: "100vh",
+        zIndex: 1300,
+        pointerEvents: miniSidenav ? "auto" : "none",
+        opacity: miniSidenav ? 0.02 : 0,
+        transition: "opacity 0.3s ease",
+        background: "linear-gradient(180deg, rgba(0, 117, 255, 0.35) 0%, rgba(0, 117, 255, 0.05) 100%)",
+      }}
+    />
+  );
+
   return direction === "rtl" ? (
     <CacheProvider value={rtlCache}>
       <ThemeProvider theme={themeRTL}>
         <CssBaseline />
         {layout === "dashboard" && (
           <>
+            {hoverStrip}
             <Sidenav
               color={sidenavColor}
               brand=""
@@ -141,13 +161,14 @@ export default function App() {
       </ThemeProvider>
     </CacheProvider>
   ) : (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      {layout === "dashboard" && (
-        <>
-          <Sidenav
-            color={sidenavColor}
-            brand=""
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        {layout === "dashboard" && (
+          <>
+            {hoverStrip}
+            <Sidenav
+              color={sidenavColor}
+              brand=""
             brandName="BaseballBinder"
             routes={routes}
             onMouseEnter={handleOnMouseEnter}

@@ -64,6 +64,29 @@ class ChecklistItem(BaseModel):
     rookie: bool
     parallel: Optional[str] = None
 
+def normalize_set_name(value: str) -> str:
+    """
+    Normalize a set name so file stems and UI strings can be matched reliably.
+    """
+    return value.replace("-", " ").replace("_", " ").strip()
+
+
+def find_checklist_csv(year: str, set_name: str) -> Optional[Path]:
+    """
+    Attempt to locate the CSV file on disk that represents a given set.
+    """
+    year_folder = Path("checklists") / year
+    if not year_folder.exists():
+        return None
+
+    target = normalize_set_name(set_name).lower()
+    for csv_file in year_folder.glob("*.csv"):
+        normalized = normalize_set_name(csv_file.stem).lower()
+        if normalized == target:
+            return csv_file
+    return None
+
+
 # Helper function to scan and import CSVs from checklists folder
 def scan_and_import_checklists(db: Session, force: bool = False):
     """
@@ -97,7 +120,7 @@ def scan_and_import_checklists(db: Session, force: bool = False):
 
         for csv_file in year_folder.glob("*.csv"):
             try:
-                set_name = csv_file.stem.replace('-', ' ').replace('_', ' ').strip()
+                set_name = normalize_set_name(csv_file.stem)
 
                 # Track this checklist as found
                 found_checklists.add((set_name, year))
@@ -197,6 +220,21 @@ def get_checklist_summary(db: Session = Depends(get_db)):
         for row in results
     ]
 
+
+@router.get("/years")
+def list_checklist_years(db: Session = Depends(get_db)):
+    """
+    Return the distinct years that currently have imported checklists.
+    """
+    year_rows = (
+        db.query(Checklist.year)
+        .distinct()
+        .order_by(Checklist.year.desc())
+        .all()
+    )
+    return {"years": [row[0] for row in year_rows]}
+
+
 @router.post("/rescan")
 def rescan_checklists(
     force: bool = Query(False, description="If true, clears existing checklists before rescanning"),
@@ -253,6 +291,42 @@ def get_checklist(year: str, set_name: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Checklist not found")
 
     return checklists
+
+
+@router.delete("/{year}/{set_name}")
+def delete_checklist(year: str, set_name: str, db: Session = Depends(get_db)):
+    """
+    Delete a checklist's records from the database and remove its CSV file if present.
+    """
+    normalized = normalize_set_name(set_name).lower()
+
+    cards_query = db.query(Checklist).filter(
+        Checklist.year == year,
+        func.lower(Checklist.set_name) == normalized
+    )
+
+    cards_removed = cards_query.count()
+    if cards_removed:
+        cards_query.delete(synchronize_session=False)
+        db.commit()
+
+    csv_file = find_checklist_csv(year, set_name)
+    file_removed = False
+    removed_filename = None
+    if csv_file and csv_file.exists():
+        csv_file.unlink()
+        file_removed = True
+        removed_filename = csv_file.name
+
+    if cards_removed == 0 and not file_removed:
+        raise HTTPException(status_code=404, detail="Checklist not found")
+
+    return {
+        "message": f"Removed checklist '{set_name}' for {year}.",
+        "cards_removed": cards_removed,
+        "file_removed": file_removed,
+        "removed_filename": removed_filename,
+    }
 
 # ==============================
 # EMAIL NOTIFICATION HELPER

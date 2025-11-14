@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, ConfigDict
@@ -35,6 +35,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+def normalize_preview_url(url: Optional[str]) -> Optional[str]:
+    if not url:
+        return url
+    upgraded = url
+    replacements = ["s-l64", "s-l75", "s-l96", "s-l140", "s-l150", "s-l200", "s-l320", "s-l400", "s-l500"]
+    for token in replacements:
+        if token in upgraded:
+            upgraded = upgraded.replace(token, "s-l800")
+    return upgraded
+
 # -------------------------------------------------
 # Setup logging
 # -------------------------------------------------
@@ -51,7 +62,8 @@ app.include_router(checklist_router)
 # -------------------------------------------------
 # Serve built React app (Vision UI Dashboard)
 # -------------------------------------------------
-app.mount("/", StaticFiles(directory="frontend/build", html=True), name="frontend")
+# Disabled for development - React runs on port 3000 separately
+# app.mount("/", StaticFiles(directory="frontend/build", html=True), name="frontend")
 
 # -------------------------------------------------
 # Run the server
@@ -74,6 +86,10 @@ class CardCreate(BaseModel):
     location: Optional[str] = None
     notes: Optional[str] = None
     quantity: int = 1
+    preview_image_url: Optional[str] = None
+    preview_fit: Optional[str] = 'cover'
+    preview_focus: Optional[float] = 50.0
+    preview_zoom: Optional[float] = 1.0
 
 class CardUpdate(BaseModel):
     set_name: Optional[str] = None
@@ -92,6 +108,10 @@ class CardUpdate(BaseModel):
     location: Optional[str] = None
     notes: Optional[str] = None
     quantity: Optional[int] = None
+    preview_image_url: Optional[str] = None
+    preview_fit: Optional[str] = None
+    preview_focus: Optional[float] = None
+    preview_zoom: Optional[float] = None
 
 class CardResponse(CardCreate):
     model_config = ConfigDict(from_attributes=True)
@@ -102,6 +122,10 @@ class CardResponse(CardCreate):
     tracked_for_pricing: bool = False
     last_price_check: Optional[datetime] = None
     ebay_avg_price: Optional[float] = None
+    preview_image_url: Optional[str] = None
+    preview_fit: Optional[str] = 'cover'
+    preview_focus: Optional[float] = 50.0
+    preview_zoom: Optional[float] = 1.0
 
 # Price Tracking Models
 class UpdateTrackingRequest(BaseModel):
@@ -130,9 +154,32 @@ class EbayPriceCheckResponse(BaseModel):
     last_checked: str
     ebay_url: str
 
+class CardPreviewUpdate(BaseModel):
+    preview_image_url: Optional[str] = None
+    preview_fit: Optional[str] = None
+    preview_focus: Optional[float] = None
+    preview_zoom: Optional[float] = None
+    clear: bool = False
+
+class CardPreviewUpdate(BaseModel):
+    preview_image_url: Optional[str] = None
+
 @app.get("/")
 def root():
     return {"message": "Card Collection API", "version": "1.0"}
+
+
+def build_card_search_query(card: Card) -> str:
+    parts = [
+        card.player,
+        card.year,
+        card.set_name,
+        card.card_number,
+        card.variety,
+        card.parallel,
+        card.team,
+    ]
+    return " ".join(str(part).strip() for part in parts if part).strip()
 
 @app.post("/cards/", response_model=CardResponse)
 def create_card(card: CardCreate, db: Session = Depends(get_db)):
@@ -228,6 +275,430 @@ def get_collection_stats(db: Session = Depends(get_db)):
     }
 
 # ==============================
+# DASHBOARD STATS ENDPOINTS
+# ==============================
+
+@app.get("/stats/enhanced")
+def get_enhanced_stats(db: Session = Depends(get_db)):
+    """Get enhanced statistics with trends for dashboard"""
+    from datetime import timedelta
+    from sqlalchemy import and_
+
+    # Basic stats
+    total_cards = db.query(Card).count()
+    total_value = db.query(func.sum(Card.current_value)).scalar() or 0
+    total_invested = db.query(func.sum(Card.price_paid)).scalar() or 0
+    cards_with_ebay_pricing = db.query(Card).filter(Card.ebay_avg_price.isnot(None)).count()
+
+    profit_loss = None
+    if cards_with_ebay_pricing > 0:
+        profit_loss = total_value - total_invested
+
+    # Tracked cards count
+    tracked_count = db.query(Card).filter(Card.tracked_for_pricing == True).count()
+
+    # Unique sets count
+    unique_sets = db.query(func.count(func.distinct(Card.set_name))).scalar() or 0
+
+    # 7-day trends for cards added
+    value_trend_7d = []
+    cards_added_trend_7d = []
+
+    # Calculate cards added in last 7 days
+    now = datetime.now(timezone.utc)
+    for i in range(6, -1, -1):
+        day_start = now - timedelta(days=i)
+        day_end = day_start + timedelta(days=1)
+        daily_count = db.query(Card).filter(
+            and_(Card.created_at >= day_start, Card.created_at < day_end)
+        ).count()
+        cards_added_trend_7d.append(daily_count)
+
+    # For value trend, use placeholder (would need CardPriceHistory for accurate trends)
+    for i in range(7):
+        value_trend_7d.append(float(total_value) if i == 6 else 0)
+
+    return {
+        "total_cards": total_cards,
+        "total_value": total_value,
+        "total_invested": total_invested,
+        "profit_loss": profit_loss,
+        "tracked_count": tracked_count,
+        "unique_sets": unique_sets,
+        "value_trend_7d": value_trend_7d,
+        "cards_added_trend_7d": cards_added_trend_7d,
+        "has_ebay_data": cards_with_ebay_pricing > 0
+    }
+
+@app.get("/stats/top-tracked-cards")
+def get_top_tracked_cards(limit: int = Query(default=3, le=20), db: Session = Depends(get_db)):
+    """Get top tracked cards by current value"""
+    cards = db.query(Card).filter(
+        Card.tracked_for_pricing == True,
+        Card.current_value.isnot(None)
+    ).order_by(Card.current_value.desc()).limit(limit).all()
+
+    result = []
+    for card in cards:
+        # Calculate value change if we have both current and invested
+        value_change_percent = None
+        if card.price_paid and card.current_value and card.price_paid > 0:
+            value_change_percent = ((card.current_value - card.price_paid) / card.price_paid) * 100
+
+        result.append({
+            "id": card.id,
+            "player": card.player,
+            "year": card.year,
+            "set_name": card.set_name,
+            "card_number": card.card_number,
+            "current_value": card.current_value,
+            "preview_image_url": card.preview_image_url,
+            "value_change_percent": round(value_change_percent, 2) if value_change_percent else None
+        })
+
+    return result
+
+@app.get("/stats/top-valuable-cards")
+def get_top_valuable_cards(limit: int = Query(default=5, le=20), db: Session = Depends(get_db)):
+    """Get top N most valuable cards in collection (regardless of tracking status)"""
+    cards = db.query(Card).filter(
+        Card.current_value.isnot(None)
+    ).order_by(Card.current_value.desc()).limit(limit).all()
+
+    result = []
+    for card in cards:
+        value_change_percent = None
+        if card.price_paid and card.current_value and card.price_paid > 0:
+            value_change_percent = ((card.current_value - card.price_paid) / card.price_paid) * 100
+
+        result.append({
+            "id": card.id,
+            "player": card.player,
+            "year": card.year,
+            "set_name": card.set_name,
+            "card_number": card.card_number,
+            "variety": card.variety,
+            "parallel": card.parallel,
+            "current_value": card.current_value,
+            "price_paid": card.price_paid,
+            "preview_image_url": card.preview_image_url,
+            "value_change_percent": round(value_change_percent, 2) if value_change_percent else None
+        })
+    return result
+
+@app.get("/stats/card-types")
+def get_card_types(db: Session = Depends(get_db)):
+    """Get distribution of cards by type (Graded, Autograph, Numbered, Parallel, Base)"""
+    all_cards = db.query(Card).all()
+
+    types = {
+        "Graded": 0,
+        "Autograph": 0,
+        "Numbered": 0,
+        "Parallel": 0,
+        "Base": 0
+    }
+
+    for card in all_cards:
+        if card.graded:
+            types["Graded"] += 1
+        elif card.autograph:
+            types["Autograph"] += 1
+        elif card.numbered:
+            types["Numbered"] += 1
+        elif card.parallel:
+            types["Parallel"] += 1
+        else:
+            types["Base"] += 1
+
+    return types
+
+@app.get("/stats/team-distribution")
+def get_team_distribution(limit: int = Query(default=10, le=50), db: Session = Depends(get_db)):
+    """Get top teams by card count"""
+    teams = db.query(
+        Card.team,
+        func.count(Card.id).label('count')
+    ).filter(
+        Card.team.isnot(None),
+        Card.team != ''
+    ).group_by(Card.team).order_by(func.count(Card.id).desc()).limit(limit).all()
+
+    return [{"team": team, "count": count} for team, count in teams]
+
+@app.get("/stats/player-distribution")
+def get_player_distribution(limit: int = Query(default=10, le=50), db: Session = Depends(get_db)):
+    """Get top players by card count"""
+    players = db.query(
+        Card.player,
+        func.count(Card.id).label('count')
+    ).filter(
+        Card.player.isnot(None),
+        Card.player != ''
+    ).group_by(Card.player).order_by(func.count(Card.id).desc()).limit(limit).all()
+
+    return [{"player": player, "count": count} for player, count in players]
+
+@app.get("/stats/set-breakdown")
+def get_set_breakdown(limit: int = Query(default=10, le=50), db: Session = Depends(get_db)):
+    """Get top sets by card count"""
+    sets = db.query(
+        Card.set_name,
+        Card.year,
+        func.count(Card.id).label('count')
+    ).filter(
+        Card.set_name.isnot(None),
+        Card.set_name != ''
+    ).group_by(Card.set_name, Card.year).order_by(func.count(Card.id).desc()).limit(limit).all()
+
+    return [{"set_name": set_name, "year": year, "count": count} for set_name, year, count in sets]
+
+@app.get("/stats/recent-additions")
+def get_recent_additions(limit: int = Query(default=10, le=50), db: Session = Depends(get_db)):
+    """Get recently added cards"""
+    cards = db.query(Card).order_by(Card.created_at.desc()).limit(limit).all()
+
+    result = []
+    now = datetime.now(timezone.utc)
+    for card in cards:
+        # Calculate days ago - handle timezone-naive datetimes
+        days_ago = 0
+        if card.created_at:
+            card_dt = card.created_at
+            # Make timezone-aware if needed
+            if card_dt.tzinfo is None:
+                card_dt = card_dt.replace(tzinfo=timezone.utc)
+            days_ago = (now - card_dt).days
+
+        result.append({
+            "id": card.id,
+            "player": card.player,
+            "year": card.year,
+            "set_name": card.set_name,
+            "card_number": card.card_number,
+            "preview_image_url": card.preview_image_url,
+            "created_at": card.created_at.isoformat() if card.created_at else None,
+            "days_ago": days_ago
+        })
+
+    return result
+
+@app.get("/stats/milestones")
+def get_milestones(db: Session = Depends(get_db)):
+    """Get collector milestones and progress"""
+    # Current totals
+    total_cards = db.query(Card).count()
+    total_value = db.query(func.sum(Card.current_value)).scalar() or 0
+    unique_players = db.query(func.count(func.distinct(Card.player))).filter(
+        Card.player.isnot(None), Card.player != ''
+    ).scalar() or 0
+
+    # Define milestone thresholds
+    card_milestones = [10, 25, 50, 100, 250, 500, 1000, 2500, 5000]
+    value_milestones = [100, 500, 1000, 2500, 5000, 10000, 25000, 50000]
+    player_milestones = [5, 10, 25, 50, 100, 250, 500]
+
+    # Find achieved and next milestones
+    def get_milestone_progress(current, milestones):
+        achieved = [m for m in milestones if current >= m]
+        next_milestone = next((m for m in milestones if m > current), milestones[-1])
+        progress = (current / next_milestone) if next_milestone > 0 else 1.0
+        return achieved, next_milestone, min(progress, 1.0)
+
+    cards_achieved, cards_next, cards_progress = get_milestone_progress(total_cards, card_milestones)
+    value_achieved, value_next, value_progress = get_milestone_progress(total_value, value_milestones)
+    players_achieved, players_next, players_progress = get_milestone_progress(unique_players, player_milestones)
+
+    return {
+        "total_cards_current": total_cards,
+        "total_cards_milestones": cards_achieved,
+        "total_cards_next": cards_next,
+        "total_cards_progress": round(cards_progress, 2),
+        "total_value_current": total_value,
+        "total_value_milestones": value_achieved,
+        "total_value_next": value_next,
+        "total_value_progress": round(value_progress, 2),
+        "unique_players_current": unique_players,
+        "unique_players_milestones": players_achieved,
+        "unique_players_next": players_next,
+        "unique_players_progress": round(players_progress, 2)
+    }
+
+@app.get("/stats/monthly-snapshot")
+def get_monthly_snapshot(db: Session = Depends(get_db)):
+    """Get comparison of last 30 days vs previous 30 days"""
+    from datetime import timedelta
+
+    now = datetime.now(timezone.utc)
+    last_30_start = now - timedelta(days=30)
+    prev_30_start = now - timedelta(days=60)
+
+    # Last 30 days stats
+    last_30_cards = db.query(Card).filter(Card.created_at >= last_30_start).all()
+    last_30_count = len(last_30_cards)
+    last_30_value = sum(c.price_paid for c in last_30_cards if c.price_paid) or 0
+    last_30_sets = db.query(func.count(func.distinct(Card.set_name))).filter(
+        Card.created_at >= last_30_start
+    ).scalar() or 0
+
+    # Previous 30 days stats
+    prev_30_cards = db.query(Card).filter(
+        Card.created_at >= prev_30_start,
+        Card.created_at < last_30_start
+    ).all()
+    prev_30_count = len(prev_30_cards)
+    prev_30_value = sum(c.price_paid for c in prev_30_cards if c.price_paid) or 0
+    prev_30_sets = db.query(func.count(func.distinct(Card.set_name))).filter(
+        Card.created_at >= prev_30_start,
+        Card.created_at < last_30_start
+    ).scalar() or 0
+
+    # Calculate changes
+    def calc_percent_change(current, previous):
+        if previous == 0:
+            return 100.0 if current > 0 else 0.0
+        return ((current - previous) / previous) * 100
+
+    return {
+        "last_30_days": {
+            "cards_added": last_30_count,
+            "value_added": last_30_value,
+            "unique_sets_added": last_30_sets
+        },
+        "previous_30_days": {
+            "cards_added": prev_30_count,
+            "value_added": prev_30_value,
+            "unique_sets_added": prev_30_sets
+        },
+        "change": {
+            "cards_added_percent": round(calc_percent_change(last_30_count, prev_30_count), 2),
+            "value_added_percent": round(calc_percent_change(last_30_value, prev_30_value), 2),
+            "unique_sets_added_percent": round(calc_percent_change(last_30_sets, prev_30_sets), 2)
+        }
+    }
+
+@app.get("/stats/year-distribution")
+def get_year_distribution(db: Session = Depends(get_db)):
+    """Get card distribution by year"""
+    years = db.query(
+        Card.year,
+        func.count(Card.id).label('count')
+    ).filter(
+        Card.year.isnot(None),
+        Card.year != ''
+    ).group_by(Card.year).order_by(Card.year.desc()).all()
+
+    return [{"year": year, "count": count} for year, count in years]
+
+@app.get("/stats/growth-over-time")
+def get_growth_over_time(
+    period: str = Query(default="monthly", regex="^(daily|weekly|monthly)$"),
+    months: int = Query(default=12, le=36),
+    db: Session = Depends(get_db)
+):
+    """Get collection growth over time"""
+    from datetime import timedelta
+    from sqlalchemy import cast, Date
+
+    now = datetime.now(timezone.utc)
+    start_date = now - timedelta(days=months * 30)
+
+    # Get all cards with their creation dates
+    cards = db.query(Card).filter(Card.created_at >= start_date).order_by(Card.created_at).all()
+
+    # Group by period
+    result = {"card_count": [], "total_value": []}
+
+    if period == "monthly":
+        # Group by month
+        from collections import defaultdict
+        monthly_data = defaultdict(lambda: {"count": 0, "value": 0})
+
+        for card in cards:
+            if card.created_at:
+                month_key = card.created_at.strftime("%Y-%m-01")
+                monthly_data[month_key]["count"] += 1
+                if card.price_paid:
+                    monthly_data[month_key]["value"] += card.price_paid
+
+        # Convert to list format
+        for month in sorted(monthly_data.keys()):
+            result["card_count"].append({"date": month, "count": monthly_data[month]["count"]})
+            result["total_value"].append({"date": month, "value": monthly_data[month]["value"]})
+
+    return result
+
+@app.get("/stats/value-trends")
+def get_value_trends(
+    period: str = Query(default="monthly", regex="^(daily|weekly|monthly)$"),
+    months: int = Query(default=12, le=36),
+    db: Session = Depends(get_db)
+):
+    """Get value trends using CardPriceHistory"""
+    from datetime import timedelta
+    from models import CardPriceHistory
+    from collections import defaultdict
+
+    now = datetime.now(timezone.utc)
+    start_date = now - timedelta(days=months * 30)
+
+    # Get price history
+    price_history = db.query(CardPriceHistory).filter(
+        CardPriceHistory.checked_at >= start_date
+    ).order_by(CardPriceHistory.checked_at).all()
+
+    result = []
+
+    if period == "monthly":
+        monthly_data = defaultdict(lambda: {"total": 0, "count": 0})
+
+        for entry in price_history:
+            if entry.checked_at and entry.price:
+                month_key = entry.checked_at.strftime("%Y-%m-01")
+                monthly_data[month_key]["total"] += entry.price
+                monthly_data[month_key]["count"] += 1
+
+        # Calculate averages
+        for month in sorted(monthly_data.keys()):
+            avg_value = monthly_data[month]["total"] / monthly_data[month]["count"] if monthly_data[month]["count"] > 0 else 0
+            result.append({"date": month, "avg_value": round(avg_value, 2), "count": monthly_data[month]["count"]})
+
+    return result
+
+@app.get("/stats/activity-heatmap")
+def get_activity_heatmap(days: int = Query(default=365, le=730), db: Session = Depends(get_db)):
+    """Get daily activity for heatmap visualization"""
+    from datetime import timedelta, date
+    from collections import defaultdict
+
+    now = datetime.now(timezone.utc)
+    start_date = now - timedelta(days=days)
+
+    # Get all cards added in the time period
+    cards = db.query(Card).filter(Card.created_at >= start_date).all()
+
+    # Count by date
+    daily_counts = defaultdict(int)
+    for card in cards:
+        if card.created_at:
+            date_key = card.created_at.date().isoformat()
+            daily_counts[date_key] += 1
+
+    # Generate all dates in range (including zeros)
+    result = []
+    current = start_date.date()
+    end = now.date()
+
+    while current <= end:
+        result.append({
+            "date": current.isoformat(),
+            "count": daily_counts.get(current.isoformat(), 0)
+        })
+        current += timedelta(days=1)
+
+    return result
+
+# ==============================
 # PRICE TRACKING ENDPOINTS
 # ==============================
 
@@ -260,6 +731,41 @@ def update_tracking(request: UpdateTrackingRequest, db: Session = Depends(get_db
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/cards/{card_id}/preview")
+def update_card_preview(card_id: int, payload: CardPreviewUpdate, db: Session = Depends(get_db)):
+    """Persist or clear a preview image for a card."""
+    card = db.query(Card).filter(Card.id == card_id).first()
+    if not card:
+        raise HTTPException(status_code=404, detail="Card not found")
+
+    if payload.clear:
+        card.preview_image_url = None
+        card.preview_fit = 'cover'
+        card.preview_focus = 50.0
+        card.preview_zoom = 1.0
+        card.ebay_avg_price = None
+        card.current_value = None
+        card.last_price_check = None
+    else:
+        if payload.preview_image_url is not None:
+            card.preview_image_url = normalize_preview_url(payload.preview_image_url)
+        if payload.preview_fit:
+            card.preview_fit = payload.preview_fit
+        if payload.preview_focus is not None:
+            card.preview_focus = payload.preview_focus
+        if payload.preview_zoom is not None:
+            card.preview_zoom = max(0.5, min(3.0, payload.preview_zoom))
+    card.updated_at = datetime.now(timezone.utc)
+    db.commit()
+
+    return {
+        "success": True,
+        "preview_image_url": card.preview_image_url,
+        "preview_fit": card.preview_fit,
+        "preview_focus": card.preview_focus,
+        "preview_zoom": card.preview_zoom,
+    }
 
 @app.post("/cards/bulk-update-values")
 def bulk_update_values(request: BulkUpdateValuesRequest, db: Session = Depends(get_db)):
@@ -656,7 +1162,7 @@ def test_ebay_oauth_connection():
         }
 
 @app.get("/cards/{card_id}/search-with-images")
-def search_card_with_images(card_id: int, db: Session = Depends(get_db)):
+def search_card_with_images(card_id: int, q: Optional[str] = Query(None, alias="q"), db: Session = Depends(get_db)):
     """
     Enhanced search that returns full eBay results with images for user selection.
     Logs search progress and allows user to confirm the correct card match.
@@ -684,7 +1190,8 @@ def search_card_with_images(card_id: int, db: Session = Depends(get_db)):
 
         # Build search parameters
         year = card.year or ""
-        brand = card.set_name.split()[0] if card.set_name else ""
+        set_name = (card.set_name or "").strip()
+        brand = set_name
         player_name = card.player or ""
         card_number = card.card_number
 
@@ -692,16 +1199,26 @@ def search_card_with_images(card_id: int, db: Session = Depends(get_db)):
             logger.error(f"Card {card_id} missing player name")
             raise HTTPException(status_code=400, detail="Card must have a player name for eBay search")
 
-        logger.info(f"Search parameters: year={year}, brand={brand}, player={player_name}, card_number={card_number}")
+        logger.info(
+            f"Search parameters: year={year}, brand={brand}, player={player_name}, card_number={card_number}, "
+            f"variety={card.variety}, parallel={card.parallel}, autograph={card.autograph}, graded={card.graded}, numbered={card.numbered}"
+        )
 
         # Perform the search
         logger.info(f"Calling eBay API for card {card_id}")
+        default_query = q or build_card_search_query(card)
         result = ebay_service.search_card(
             year=year,
             brand=brand,
             player_name=player_name,
             card_number=card_number,
-            card_id=card_id
+            variety=card.variety,
+            parallel=card.parallel,
+            autograph=bool(card.autograph),
+            graded=card.graded,
+            numbered=card.numbered,
+            card_id=card_id,
+            manual_query=default_query,
         )
 
         # Extract items with images
@@ -736,7 +1253,7 @@ def search_card_with_images(card_id: int, db: Session = Depends(get_db)):
             year=year,
             set_name=card.set_name,
             card_number=card_number,
-            search_query=result.get('search_query', ''),
+            search_query=result.get('search_query', default_query),
             all_results=json.dumps(formatted_items),
             total_results=total_results,
             user_confirmed=False,
@@ -757,7 +1274,7 @@ def search_card_with_images(card_id: int, db: Session = Depends(get_db)):
                 "set_name": card.set_name,
                 "card_number": card_number
             },
-            "search_query": result.get('search_query', ''),
+            "search_query": result.get('search_query', default_query),
             "total_results": total_results,
             "items": formatted_items,
             "pricing": result.get('pricing'),
@@ -828,6 +1345,12 @@ def confirm_card_selection(
     if card:
         card.ebay_avg_price = selected_item['price']
         card.last_price_check = datetime.now(timezone.utc)
+        card.ebay_item_id = selected_item['item_id']  # Track which specific listing was selected
+        if selected_item.get('image_url'):
+            card.preview_image_url = normalize_preview_url(selected_item['image_url'])
+            card.preview_fit = card.preview_fit or 'cover'
+            card.preview_focus = card.preview_focus if card.preview_focus is not None else 50.0
+            card.preview_zoom = card.preview_zoom if card.preview_zoom is not None else 1.0
 
     db.commit()
 
@@ -1125,7 +1648,8 @@ async def check_for_updates():
     from fastapi.staticfiles import StaticFiles
 
 # Serve built React app when ready
-app.mount("/", StaticFiles(directory="frontend/build", html=True), name="frontend")
+# Disabled for development - React runs on port 3000 separately
+# app.mount("/", StaticFiles(directory="frontend/build", html=True), name="frontend")
 
 if __name__ == "__main__":
     import uvicorn

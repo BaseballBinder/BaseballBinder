@@ -62,6 +62,10 @@ class eBayService:
         self.daily_limit = 5000
         self.request_count_file = Path("ebay_oauth_requests.json")
 
+    INSERT_SYNONYMS = {
+        "t-minus": ["T-Minus", "T-Minus 3 2 1", "T-Minus 3...2...1!", "T Minus 3 2 1"]
+    }
+
     def _load_credentials(self):
         """Load eBay OAuth credentials from ebay-config.yaml"""
         try:
@@ -87,6 +91,204 @@ class eBayService:
             raise ImportError("PyYAML is required. Install with: pip install pyyaml")
         except Exception as e:
             raise ValueError(f"Error loading credentials: {e}")
+
+    # =========================================================================
+    # REMOVED DUPLICATE FUNCTION DEFINITIONS (previously lines 95-127)
+    # These functions (_unique_terms, _build_brand_terms, _build_variety_terms)
+    # are properly defined below starting around line 164
+    # =========================================================================
+
+    def _filter_items(self, items: List[Dict], card_number: Optional[str]) -> List[Dict]:
+        if not items:
+            return []
+        filtered = []
+        needle = (card_number or "").lower().replace("#", "")
+        for item in items:
+            title = (item.get("title") or "").lower()
+            if any(term in title for term in ["pick your", "choose", "lot", "player list"]):
+                if needle and needle not in title.replace("#", ""):
+                    continue
+            filtered.append(item)
+        return filtered
+
+    def _build_query_variants(self, base_terms: List[str], variety_terms: List[str], number_terms: List[str]) -> List[str]:
+        variants = []
+        combinations = [
+            (True, True),
+            (False, True),
+            (False, False),
+        ]
+        for include_number, include_variety in combinations:
+            terms = list(base_terms)
+            if include_variety:
+                terms.extend(variety_terms)
+            if include_number:
+                terms.extend(number_terms)
+            variants.append(" ".join(self._unique_terms(terms)))
+        unique_variants = []
+        seen = set()
+        for q in variants:
+            if q and q not in seen:
+                seen.add(q)
+                unique_variants.append(q)
+        return unique_variants
+
+    def _unique_terms(self, terms: List[str]) -> List[str]:
+        seen = set()
+        ordered = []
+        for term in terms:
+            if term and term not in seen:
+                seen.add(term)
+                ordered.append(term)
+        return ordered
+
+    def _build_brand_terms(self, brand: Optional[str]) -> List[str]:
+        """
+        Build search term variations for card brands.
+        Only adds 'Panini' prefix to actual Panini-manufactured brands.
+
+        CRITICAL FIX: Previously added "Panini" to ALL non-Panini brands (Topps, Upper Deck, etc.)
+        causing searches to match wrong manufacturers and incorrect pricing.
+        """
+        if not brand:
+            return []
+        terms = {brand}
+        lower = brand.lower()
+
+        # List of brands manufactured by Panini America
+        PANINI_BRANDS = [
+            "donruss", "prizm", "select", "chronicles", "optic",
+            "prestige", "contenders", "mosaic", "absolute", "crown royale",
+            "national treasures", "immaculate", "flawless", "noir",
+            "encased", "limited", "spectra", "phoenix"
+        ]
+
+        # Only add Panini prefix to actual Panini brands
+        is_panini_brand = any(pb in lower for pb in PANINI_BRANDS)
+        if is_panini_brand and "panini" not in lower:
+            terms.add(f"Panini {brand}")
+
+        # Special case handling for brands with multiple naming conventions
+        if "donruss optic" in lower:
+            terms.add("Panini Donruss Optic")
+            terms.add("Donruss Optic")
+        if "topps chrome" in lower:
+            terms.add("Topps Chrome")
+
+        return list(terms)
+
+    def _build_variety_terms(self, variety: Optional[str]) -> List[str]:
+        if not variety:
+            return []
+        terms = {variety}
+        lower = variety.lower()
+        for key, synonyms in self.INSERT_SYNONYMS.items():
+            if key in lower:
+                terms.update(synonyms)
+        return list(terms)
+
+    def _score_result_relevance(self, item: Dict, year: str, brand: str,
+                                player_name: str, card_number: Optional[str]) -> float:
+        """
+        Score how well a search result matches the input criteria.
+        Returns 0.0 (no match) to 1.0 (perfect match).
+
+        CRITICAL FIX: Previously no validation - accepted any result from eBay.
+        This caused wrong players, wrong years, wrong brands to be included in pricing.
+
+        Scoring breakdown:
+        - Player name (40%): REQUIRED - reject if not found
+        - Year (20%): REQUIRED - reject if not found
+        - Brand (20%): REQUIRED - reject if not found
+        - Card number (20%): OPTIONAL - bonus if found
+        """
+        title = item.get('title', '').lower()
+        score = 0.0
+
+        # Player name validation (40% weight) - REQUIRED
+        player_lower = player_name.lower()
+        if player_lower in title:
+            score += 0.4
+        else:
+            # Check last name only as fallback
+            last_name = player_lower.split()[-1] if player_lower else ""
+            if last_name and last_name in title:
+                score += 0.2  # Partial credit for last name match
+            else:
+                # Player not found = reject this result
+                return 0.0
+
+        # Year validation (20% weight) - REQUIRED
+        if year and year in title:
+            score += 0.2
+        elif year:
+            # Year required but missing = reject
+            return 0.0
+        else:
+            # No year specified = automatic credit
+            score += 0.2
+
+        # Brand validation (20% weight) - REQUIRED
+        brand_lower = brand.lower() if brand else ""
+        if brand_lower and brand_lower in title:
+            score += 0.2
+        elif brand_lower:
+            # Brand required but missing = reject
+            return 0.0
+        else:
+            # No brand specified = automatic credit
+            score += 0.2
+
+        # Card number validation (20% weight) - OPTIONAL bonus
+        if card_number:
+            # Check multiple number formats
+            if (card_number in title or
+                f"#{card_number}" in title or
+                f"no. {card_number}" in title or
+                f"card {card_number}" in title):
+                score += 0.2
+            # Don't penalize if number not found - it's optional
+        else:
+            # No card number specified = automatic credit
+            score += 0.2
+
+        return score
+
+    def _filter_by_relevance(self, items: List[Dict], year: str, brand: str,
+                            player_name: str, card_number: Optional[str],
+                            min_score: float = 0.6) -> List[Dict]:
+        """
+        Filter eBay search results by relevance score.
+        Only keeps results that match the search criteria.
+
+        Args:
+            items: Raw eBay search results
+            year: Expected card year
+            brand: Expected card brand
+            player_name: Expected player name
+            card_number: Expected card number (optional)
+            min_score: Minimum relevance score to keep (0.0-1.0)
+
+        Returns:
+            Filtered list of items, sorted by relevance score (highest first)
+        """
+        scored_items = []
+
+        for item in items:
+            score = self._score_result_relevance(item, year, brand, player_name, card_number)
+
+            if score >= min_score:
+                item['_relevance_score'] = score
+                scored_items.append(item)
+            else:
+                logger.debug(f"Rejected low-relevance result (score {score:.2f}): {item.get('title', '')[:80]}")
+
+        # Sort by relevance score descending (best matches first)
+        scored_items.sort(key=lambda x: x.get('_relevance_score', 0), reverse=True)
+
+        logger.info(f"Relevance filtering: kept {len(scored_items)}/{len(items)} results (min_score={min_score})")
+
+        return scored_items
 
     def _get_request_count(self) -> int:
         """Get today's request count"""
@@ -324,7 +526,9 @@ class eBayService:
                    autograph: bool = False,
                    graded: Optional[str] = None,
                    numbered: Optional[str] = None,
-                   card_id: Optional[int] = None) -> Dict:
+                   card_id: Optional[int] = None,
+                   manual_query: Optional[str] = None,
+                   _is_broadening: bool = False) -> Dict:
         """
         Search for baseball cards using eBay Browse API with caching.
 
@@ -339,6 +543,8 @@ class eBayService:
             graded: Optional grading info (e.g., "PSA 10", "BGS 9.5")
             numbered: Optional serial numbering (e.g., "/99", "/25")
             card_id: Optional card ID for logging purposes
+            manual_query: Optional manual search query override
+            _is_broadening: Internal flag to prevent recursive broadening
 
         Returns:
             dict: Search results with pricing information
@@ -346,33 +552,35 @@ class eBayService:
         Raises:
             eBayOAuthError: If search fails
         """
-        # Build comprehensive search query
-        query_parts = [year, brand, player_name]
-        if card_number:
-            query_parts.append(f"#{card_number}")
-        if variety:
-            query_parts.append(variety)
-        if parallel:
-            query_parts.append(parallel)
-        if autograph:
-            query_parts.append("autograph")
-        if graded:
-            query_parts.append(graded)
+        if manual_query:
+            query = manual_query.strip()
+        else:
+            # Build comprehensive search query
+            query_parts = [year, player_name]
+            query_parts.extend(self._build_brand_terms(brand))
+            if card_number:
+                query_parts.append(f"#{card_number}")
+                # Removed duplicate card_number append - single #number format is sufficient
+            if variety:
+                query_parts.extend(self._build_variety_terms(variety))
+            if parallel:
+                query_parts.append(parallel)
+            if autograph:
+                query_parts.append("autograph")
+            if graded:
+                query_parts.append(graded)
 
-        # Extract print run from numbered (e.g., "05/49" -> "/49")
-        print_run = None
-        if numbered:
-            # Check if numbered contains a pattern like "05/49" or "105/200"
-            match = re.search(r'/(\d+)$', numbered)
-            if match:
-                # Extract just the "/49" part for search
-                print_run = f"/{match.group(1)}"
-                query_parts.append(print_run)
-            else:
-                # If it's already in format "/49" or doesn't match pattern, use as-is
-                query_parts.append(numbered)
+            # Extract print run from numbered (e.g., "05/49" -> "/49")
+            print_run = None
+            if numbered:
+                match = re.search(r'/(\d+)$', numbered)
+                if match:
+                    print_run = f"/{match.group(1)}"
+                    query_parts.append(print_run)
+                else:
+                    query_parts.append(numbered)
 
-        query = " ".join(query_parts)
+            query = " ".join(self._unique_terms(query_parts))
         start_time = time.time()
 
         logger.info(f"Searching eBay for: {query}")
@@ -469,49 +677,59 @@ class eBayService:
             items = data.get('itemSummaries', [])
             total = data.get('total', 0)
 
+            # CRITICAL FIX: Filter results by relevance before processing
+            # Rejects results that don't match player, year, or brand
+            if items:
+                original_count = len(items)
+                items = self._filter_by_relevance(
+                    items, year, brand, player_name, card_number, min_score=0.6
+                )
+                if len(items) < original_count:
+                    logger.info(f"Relevance filter reduced results: {original_count} → {len(items)}")
+
             if not items:
                 logger.info(f"No results found for: {query}")
 
                 # Progressive search broadening: try broader searches if no results
-                broader_result = None
+                # CRITICAL FIX: Stop before removing card number to prevent matching wrong cards
+                # Only broaden if this is not already a broadened search (prevent recursion)
+                if not _is_broadening:
+                    broader_result = None
 
-                # Strategy 1: Remove print run specification (most restrictive)
-                if numbered and not broader_result:
-                    logger.info(f"Retrying without print run specification: {numbered}")
-                    broader_result = self.search_card(
-                        year=year, brand=brand, player_name=player_name,
-                        card_number=card_number, variety=variety, parallel=parallel,
-                        autograph=autograph, graded=graded, numbered=None, card_id=card_id
-                    )
-                    if broader_result.get('total_results', 0) > 0:
-                        broader_result['search_query'] += f" (broadened: removed print run)"
-                        return broader_result
+                    # Strategy 1: Remove print run specification (most restrictive)
+                    if numbered and not broader_result:
+                        logger.info(f"Retrying without print run specification: {numbered}")
+                        broader_result = self.search_card(
+                            year=year, brand=brand, player_name=player_name,
+                            card_number=card_number, variety=variety, parallel=parallel,
+                            autograph=autograph, graded=graded, numbered=None, card_id=card_id,
+                            _is_broadening=True
+                        )
+                        if broader_result.get('total_results', 0) > 0:
+                            broader_result['search_query'] += f" (broadened: removed print run)"
+                            return broader_result
 
-                # Strategy 2: Remove variety and parallel
-                if (variety or parallel) and not broader_result:
-                    logger.info(f"Retrying without variety/parallel specifications")
-                    broader_result = self.search_card(
-                        year=year, brand=brand, player_name=player_name,
-                        card_number=card_number, variety=None, parallel=None,
-                        autograph=autograph, graded=graded, numbered=None, card_id=card_id
-                    )
-                    if broader_result.get('total_results', 0) > 0:
-                        broader_result['search_query'] += f" (broadened: removed variety/parallel)"
-                        return broader_result
+                    # Strategy 2: Remove variety and parallel (keep card number!)
+                    if (variety or parallel) and not broader_result:
+                        logger.info(f"Retrying without variety/parallel specifications")
+                        broader_result = self.search_card(
+                            year=year, brand=brand, player_name=player_name,
+                            card_number=card_number,  # KEEP CARD NUMBER
+                            variety=None, parallel=None,
+                            autograph=autograph, graded=graded, numbered=None, card_id=card_id,
+                            _is_broadening=True
+                        )
+                        if broader_result.get('total_results', 0) > 0:
+                            broader_result['search_query'] += f" (broadened: removed variety/parallel)"
+                            return broader_result
 
-                # Strategy 3: Remove card number (keep only essentials)
-                if card_number and not broader_result:
-                    logger.info(f"Retrying without card number specification")
-                    broader_result = self.search_card(
-                        year=year, brand=brand, player_name=player_name,
-                        card_number=None, variety=None, parallel=None,
-                        autograph=autograph, graded=graded, numbered=None, card_id=card_id
-                    )
-                    if broader_result.get('total_results', 0) > 0:
-                        broader_result['search_query'] += f" (broadened: removed card #)"
-                        return broader_result
+                    # Strategy 3 REMOVED: Previously removed card number (too broad!)
+                    # This was matching completely wrong cards and causing pricing errors.
+                    # Example: Search for "#98 Refractor /500" would match ANY card from that player/year
+                    # Better to return NO results than WRONG results.
 
                 # No results even with broadening - return empty result
+                logger.warning(f"No results found after progressive broadening for: {query}")
                 result = {
                     'search_query': query,
                     'total_results': 0,
@@ -610,8 +828,15 @@ class eBayService:
 
     def _calculate_pricing(self, items: List[Dict]) -> Dict:
         """
-        Calculate pricing statistics from search results.
-        Uses top 20 listings for average to reduce outlier impact.
+        Calculate pricing statistics from search results using IQR method.
+
+        CRITICAL FIX: Previously used first 20 results which were the cheapest 20
+        (eBay sorts by price ascending). This severely undervalued cards.
+
+        Now uses interquartile range (IQR) method:
+        - Removes bottom 25% (damaged/mispriced/fake cards)
+        - Removes top 25% (overpriced/graded cards when searching raw)
+        - Uses middle 50% for representative average
 
         Args:
             items: List of item summaries from Browse API
@@ -621,7 +846,7 @@ class eBayService:
         """
         all_prices = []
 
-        # Collect all prices for min/max
+        # Collect all prices
         for item in items:
             try:
                 price_obj = item.get('price', {})
@@ -643,12 +868,28 @@ class eBayService:
                 'count': 0
             }
 
-        # Use only top 20 listings for average calculation (better sample)
-        top_prices = all_prices[:20]
-
-        # Calculate median (more resistant to outliers)
+        # Sort prices for IQR calculation
         sorted_prices = sorted(all_prices)
         n = len(sorted_prices)
+
+        # Use IQR method for representative sample (excludes extremes)
+        if n < 4:
+            # Too few results for IQR method - use all
+            representative_prices = sorted_prices
+        else:
+            # Remove bottom 25% and top 25%, keep middle 50%
+            q1_idx = n // 4
+            q3_idx = 3 * n // 4
+            representative_prices = sorted_prices[q1_idx:q3_idx]
+
+            # Safety check: ensure we have a reasonable sample size
+            if len(representative_prices) < min(10, n // 2):
+                # If IQR gave us too few prices, use middle 50-70%
+                start_idx = n // 6  # Start at ~17%
+                end_idx = 5 * n // 6  # End at ~83%
+                representative_prices = sorted_prices[start_idx:end_idx]
+
+        # Calculate median (more resistant to outliers)
         if n % 2 == 0:
             median = (sorted_prices[n//2 - 1] + sorted_prices[n//2]) / 2
         else:
@@ -657,10 +898,12 @@ class eBayService:
         return {
             'min_price': round(min(all_prices), 2),
             'max_price': round(max(all_prices), 2),
-            'avg_price': round(sum(top_prices) / len(top_prices), 2),
+            'avg_price': round(sum(representative_prices) / len(representative_prices), 2),
             'median_price': round(median, 2),
             'count': len(all_prices),
-            'sample_size': len(top_prices)  # How many used for average
+            'sample_size': len(representative_prices),  # How many used for average
+            'excluded_low': len(all_prices) - len(sorted_prices) + (sorted_prices.index(representative_prices[0]) if representative_prices else 0),
+            'excluded_high': len(sorted_prices) - (sorted_prices.index(representative_prices[-1]) + 1 if representative_prices else 0)
         }
 
     def get_average_price(self, year: str, brand: str, player_name: str,

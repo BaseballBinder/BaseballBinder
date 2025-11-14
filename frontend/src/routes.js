@@ -41,7 +41,7 @@
 // Vision UI Dashboard React layouts
 import Dashboard from "layouts/dashboard";
 import AdminDashboard from "layouts/admin-dashboard";
-import ManageChecklists from "layouts/manage-checklists";
+import ViewChecklists from "layouts/manage-checklists";
 import ImportChecklists from "layouts/import-checklists";
 import AddCards from "layouts/add-cards";
 import ViewCollection from "layouts/view-collection";
@@ -100,10 +100,10 @@ const routes = [
     icon: <IoList size="15px" color="inherit" />,
     collapse: [
       {
-        name: "Manage Checklists",
-        key: "manage-checklists",
-        route: "/manage-checklists",
-        component: ManageChecklists,
+        name: "Current Checklists",
+        key: "current-checklists",
+        route: "/checklists",
+        component: ViewChecklists,
       },
       {
         name: "Import Checklists",

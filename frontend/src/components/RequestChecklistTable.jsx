@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { Table, TableBody, TableCell, TableHead, TableRow, CircularProgress, Tabs, Tab, TableContainer } from "@mui/material";
+import { CircularProgress, Tabs, Tab } from "@mui/material";
 import VuiBox from "components/VuiBox";
 import VuiTypography from "components/VuiTypography";
 import VuiButton from "components/VuiButton";
@@ -97,6 +97,20 @@ export default function RequestChecklistTable() {
     return true; // "all"
   });
 
+  const rowBgForStatus = (status) => {
+    switch ((status || "").toLowerCase()) {
+      case "pending":
+        return "rgba(255, 181, 71, 0.15)";
+      case "approved":
+      case "completed":
+        return "rgba(1, 181, 116, 0.15)";
+      case "rejected":
+        return "rgba(227, 26, 26, 0.15)";
+      default:
+        return "rgba(255,255,255,0.04)";
+    }
+  };
+
   // Columns config to drive header/body and enforce widths
   const columns = [
     { key: 'set_name',     label: 'Set Name',     width: '25%', align: 'left' },
@@ -106,6 +120,8 @@ export default function RequestChecklistTable() {
     { key: 'status',       label: 'Status',       width: '12%', align: 'left' },
     { key: 'actions',      label: 'Actions',      width: '18%', align: 'center' },
   ];
+
+  const gridTemplate = columns.map((col) => col.width).join(" ");
 
   return (
     <VuiBox>
@@ -123,40 +139,29 @@ export default function RequestChecklistTable() {
           value={filter}
           onChange={(e, newValue) => setFilter(newValue)}
           sx={{
-            backgroundColor: "transparent !important",
+            background: "linear-gradient(127.09deg, rgba(6,11,40,0.9), rgba(10,14,35,0.6))",
+            borderRadius: "12px",
+            padding: "4px",
             minHeight: "auto",
-            "& .MuiTabs-root": {
-              backgroundColor: "transparent !important",
-            },
-            "& .MuiTabs-scroller": {
-              backgroundColor: "transparent !important",
-            },
             "& .MuiTabs-indicator": {
               backgroundColor: "#0075ff",
               height: "3px",
-            },
-            "& .MuiTabs-flexContainer": {
-              borderBottom: "1px solid rgba(226, 232, 240, 0.1)",
-              backgroundColor: "transparent !important",
+              borderRadius: "999px",
             },
             "& .MuiTab-root": {
               color: "#a0aec0",
-              fontWeight: "500",
+              fontWeight: 500,
               textTransform: "none",
               fontSize: "14px",
               minWidth: "auto",
-              padding: "12px 24px",
+              padding: "10px 20px",
               minHeight: "auto",
+              borderRadius: "10px",
               transition: "all 0.2s ease",
-              backgroundColor: "transparent !important",
-              "&:hover": {
-                color: "#fff",
-                backgroundColor: "rgba(255, 255, 255, 0.05) !important",
-              },
             },
-            "& .Mui-selected": {
+            "& .MuiTab-root.Mui-selected": {
               color: "#fff !important",
-              backgroundColor: "transparent !important",
+              backgroundColor: "rgba(255,255,255,0.08)",
             },
           }}
         >
@@ -168,20 +173,34 @@ export default function RequestChecklistTable() {
 
       <VuiBox
         sx={{
-          background: 'linear-gradient(127.09deg, rgba(6, 11, 40, 0.94) 19.41%, rgba(10, 14, 35, 0.49) 76.65%)',
-          borderRadius: '15px',
-          padding: '20px',
-          boxShadow: '0px 3.5px 5.5px rgba(0, 0, 0, 0.02)',
+          background: "linear-gradient(135deg, rgba(6,11,40,0.94), rgba(10,14,35,0.55))",
+          borderRadius: "15px",
+          border: "1px solid rgba(255,255,255,0.1)",
+          overflow: "hidden",
         }}
       >
-        {/* CSS Grid header */}
-        <VuiBox sx={{ display: 'grid', gridTemplateColumns: '25% 10% 15% 20% 12% 18%', alignItems: 'center', px: 2, py: 1.5, borderBottom: '1px solid rgba(226, 232, 240, 0.1)' }}>
-          <VuiTypography variant="caption" color="white" sx={{ textTransform: 'uppercase', fontWeight: 'bold', fontSize: '12px' }}>Set Name</VuiTypography>
-          <VuiTypography variant="caption" color="white" sx={{ textTransform: 'uppercase', fontWeight: 'bold', fontSize: '12px' }}>Year</VuiTypography>
-          <VuiTypography variant="caption" color="white" sx={{ textTransform: 'uppercase', fontWeight: 'bold', fontSize: '12px' }}>Manufacturer</VuiTypography>
-          <VuiTypography variant="caption" color="white" sx={{ textTransform: 'uppercase', fontWeight: 'bold', fontSize: '12px' }}>Email</VuiTypography>
-          <VuiTypography variant="caption" color="white" sx={{ textTransform: 'uppercase', fontWeight: 'bold', fontSize: '12px' }}>Status</VuiTypography>
-          <VuiTypography variant="caption" color="white" sx={{ textTransform: 'uppercase', fontWeight: 'bold', fontSize: '12px', textAlign: 'center' }}>Actions</VuiTypography>
+        {/* Header */}
+        <VuiBox
+          sx={{
+            display: "grid",
+            gridTemplateColumns: gridTemplate,
+            backgroundColor: "rgba(6,11,40,0.96)",
+            px: 3,
+            py: 1.5,
+            borderBottom: "1px solid rgba(255,255,255,0.1)",
+          }}
+        >
+          {columns.map((col) => (
+            <VuiTypography
+              key={col.key}
+              variant="caption"
+              color="white"
+              fontWeight="bold"
+              sx={{ textTransform: "uppercase", letterSpacing: "0.8px", textAlign: col.align || "left" }}
+            >
+              {col.label}
+            </VuiTypography>
+          ))}
         </VuiBox>
         {/* CSS Grid body */}
         {loading ? (
@@ -195,28 +214,56 @@ export default function RequestChecklistTable() {
             </VuiTypography>
           </VuiBox>
         ) : (
-          filteredRequests.map((req) => (
-            <VuiBox key={req.id} sx={{ display: 'grid', gridTemplateColumns: '25% 10% 15% 20% 12% 18%', alignItems: 'center', py: 1.5, borderBottom: '1px solid rgba(226, 232, 240, 0.1)' }}>
-              <VuiBox>
-                <VuiTypography variant='button' color='white' fontWeight='medium'>{req.set_name}</VuiTypography>
-                {req.notes && (
-                  <VuiTypography variant='caption' color='text' display='block'>
-                    {req.notes.substring(0, 50)}{req.notes.length > 50 ? '...' : ''}
+          <VuiBox sx={{ maxHeight: 420, overflowY: "auto" }}>
+            {filteredRequests.map((req, idx) => (
+              <VuiBox
+                key={req.id}
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: gridTemplate,
+                  px: 3,
+                  py: 1.25,
+                  alignItems: "center",
+                  backgroundColor: rowBgForStatus(req.status),
+                  borderBottom: "1px solid rgba(255,255,255,0.05)",
+                }}
+              >
+                <VuiBox>
+                  <VuiTypography variant="button" color="white" fontWeight="medium">
+                    {req.set_name}
                   </VuiTypography>
-                )}
+                  {req.notes && (
+                    <VuiTypography variant="caption" color="text" display="block">
+                      {req.notes.substring(0, 50)}
+                      {req.notes.length > 50 ? "..." : ""}
+                    </VuiTypography>
+                  )}
+                </VuiBox>
+                <VuiTypography variant="button" color="white">
+                  {req.year}
+                </VuiTypography>
+                <VuiTypography variant="button" color="text">
+                  {req.manufacturer || "-"}
+                </VuiTypography>
+                <VuiTypography variant="caption" color="text">
+                  {req.email || "-"}
+                </VuiTypography>
+                <VuiBox sx={{ textAlign: "center" }}>
+                  <StatusBadge status={req.status} />
+                </VuiBox>
+                <VuiBox sx={{ display: "flex", gap: 1, justifyContent: "center", flexWrap: "wrap" }}>
+                  {req.status !== "completed" && (
+                    <VuiButton color="success" size="small" onClick={() => completeRequest(req.id)} sx={{ minWidth: "80px" }}>
+                      Complete
+                    </VuiButton>
+                  )}
+                  <VuiButton color="error" size="small" onClick={() => deleteRequest(req.id)} sx={{ minWidth: "70px" }}>
+                    Delete
+                  </VuiButton>
+                </VuiBox>
               </VuiBox>
-              <VuiTypography variant='button' color='white'>{req.year}</VuiTypography>
-              <VuiTypography variant='button' color='text'>{req.manufacturer || '-'}</VuiTypography>
-              <VuiTypography variant='caption' color='text'>{req.email || '-'}</VuiTypography>
-              <VuiBox><StatusBadge status={req.status} /></VuiBox>
-              <VuiBox sx={{ display: 'flex', gap: 1, justifyContent: 'center', flexWrap: 'wrap' }}>
-                {req.status !== 'completed' && (
-                  <VuiButton color='success' size='small' onClick={() => completeRequest(req.id)} sx={{ minWidth: '80px' }}>Complete</VuiButton>
-                )}
-                <VuiButton color='error' size='small' onClick={() => deleteRequest(req.id)} sx={{ minWidth: '70px' }}>Delete</VuiButton>
-              </VuiBox>
-            </VuiBox>
-          ))
+            ))}
+          </VuiBox>
         )}
       </VuiBox>
     </VuiBox>

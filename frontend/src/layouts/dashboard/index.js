@@ -8,6 +8,7 @@ import VuiTypography from "components/VuiTypography";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
+import { AchievementBadge, CardSpotlight, formatDaysAgo } from "./components/HeroWidgets";
 
 // Icons
 import { IoWallet } from "react-icons/io5";
@@ -139,40 +140,87 @@ function Dashboard() {
             <VuiTypography variant="h6" color="white">Loading stats...</VuiTypography>
           </VuiBox>
         ) : (
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={6} lg={3}>
-              <StatCard
-                title="Total Cards"
-                value={stats.total_cards.toLocaleString()}
-                icon={<IoCard size="24px" color="white" />}
-                color="info"
-              />
+          <VuiBox
+            sx={{
+              background: "linear-gradient(120deg, rgba(6,11,40,0.85), rgba(12,18,52,0.7))",
+              borderRadius: "24px",
+              border: "1px solid rgba(255,255,255,0.05)",
+              padding: { xs: "20px", md: "28px" },
+              boxShadow: "0 20px 45px rgba(0,0,0,0.35)",
+            }}
+          >
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={5}>
+                <CardSpotlight
+                  card={stats.featured_card || null}
+                  formatDaysAgo={formatDaysAgo}
+                  formatCurrency={formatCurrency}
+                />
+              </Grid>
+              <Grid item xs={12} md={7}>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6} lg={4}>
+                    <StatCard
+                      title="Total Cards"
+                      value={stats.total_cards.toLocaleString()}
+                      icon={<IoCard size="20px" color="white" />}
+                      color="info"
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6} lg={4}>
+                    <StatCard
+                      title="Collection Value"
+                      value={formatCurrency(stats.total_value)}
+                      icon={<IoWallet size="20px" color="white" />}
+                      color="info"
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6} lg={4}>
+                    <StatCard
+                      title="Total Invested"
+                      value={formatCurrency(stats.total_invested)}
+                      icon={<IoStatsChart size="20px" color="white" />}
+                      color="info"
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6} lg={4}>
+                    <StatCard
+                      title={stats.profit_loss === null ? "Profit/Loss" : stats.profit_loss >= 0 ? "Profit" : "Loss"}
+                      value={getProfitLossValue()}
+                      icon={<IoTrendingUp size="20px" color="white" />}
+                      color={getProfitLossColor()}
+                    />
+                  </Grid>
+                </Grid>
+                <Grid container spacing={2} mt={0.5}>
+                  <Grid item xs={12} sm={6} lg={4}>
+                    <AchievementBadge
+                      label="Cards logged"
+                      value={stats.total_cards.toLocaleString()}
+                      description="in your collection"
+                      accent="info"
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6} lg={4}>
+                    <AchievementBadge
+                      label="Portfolio value"
+                      value={formatCurrency(stats.total_value)}
+                      description="estimated market"
+                      accent="success"
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6} lg={4}>
+                    <AchievementBadge
+                      label="Profit snapshot"
+                      value={stats.profit_loss === null ? "No data" : getProfitLossValue()}
+                      description="based on eBay comps"
+                      accent={stats.profit_loss >= 0 ? "info" : "warning"}
+                    />
+                  </Grid>
+                </Grid>
+              </Grid>
             </Grid>
-            <Grid item xs={12} md={6} lg={3}>
-              <StatCard
-                title="Collection Value"
-                value={formatCurrency(stats.total_value)}
-                icon={<IoWallet size="24px" color="white" />}
-                color="info"
-              />
-            </Grid>
-            <Grid item xs={12} md={6} lg={3}>
-              <StatCard
-                title="Total Invested"
-                value={formatCurrency(stats.total_invested)}
-                icon={<IoStatsChart size="24px" color="white" />}
-                color="info"
-              />
-            </Grid>
-            <Grid item xs={12} md={6} lg={3}>
-              <StatCard
-                title={stats.profit_loss === null ? "Profit/Loss" : stats.profit_loss >= 0 ? "Profit" : "Loss"}
-                value={getProfitLossValue()}
-                icon={<IoTrendingUp size="24px" color="white" />}
-                color={getProfitLossColor()}
-              />
-            </Grid>
-          </Grid>
+          </VuiBox>
         )}
       </VuiBox>
       <Footer />

@@ -29,7 +29,15 @@
       "Bash(if exist \"__pycache__\" rmdir /S /Q \"__pycache__\")",
       "Bash(main.py)",
       "Bash(del check_prices.py)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(venvScriptspython.exe:*)",
+      "Bash(move /Y index_fixed.js index.js:*)",
+      "Bash(git checkout:*)",
+      "Bash(node -c:*)",
+      "Bash(npx eslint:*)",
+      "Bash(node:*)",
+      "Bash(awk:*)",
+      "Bash(frontend/src/layouts/dashboard/index_original.js)"
     ],
     "deny": [],
     "ask": []

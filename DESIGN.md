@@ -158,6 +158,17 @@ Row Hover: rgba(255,255,255,0.03)
 Text: #a0aec0
 Padding: 12px
 ```
+- Dark Data Grids (Checklist & Admin tables):
+  * Use CSS grid for header + rows to keep column widths aligned (define `gridTemplateColumns` once and reuse).
+  * Table wrapper: `linear-gradient(135deg, rgba(6,11,40,0.95), rgba(10,14,35,0.6))`, `border-radius: 15px`, `border: 1px solid rgba(255,255,255,0.1)`.
+  * Header strip: `background-color: rgba(6,11,40,0.96)` with uppercase captions, `letter-spacing: 0.8px`.
+  * Row background by status:
+    - Pending: `rgba(255, 181, 71, 0.15)`
+    - Approved/Completed: `rgba(1, 181, 116, 0.15)`
+    - Rejected: `rgba(227, 26, 26, 0.15)`
+    - Default: `rgba(255,255,255,0.04)`
+  * Status badges remain in-column but rows carry subtle tint for quick scanning.
+  * Action buttons live inside their own grid cell to avoid shifting headers.
 
 ### Forms & Inputs
 ```css
